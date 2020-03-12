@@ -31,7 +31,8 @@ __copyright__ = '(C) 2020 by Philipe Borba'
 __revision__ = '$Format:%H$'
 
 from qgis.core import QgsProcessingProvider
-from .deep_learning_tools_algorithm import DeepLearningToolsAlgorithm
+from DeepLearningTools.core.processing_algorithms.create_training_labels_from_layer_algorithm import \
+    CreateTrainingLabelsFromLayerAlgorithm
 
 
 class DeepLearningToolsProvider(QgsProcessingProvider):
@@ -53,7 +54,7 @@ class DeepLearningToolsProvider(QgsProcessingProvider):
         """
         Loads all algorithms belonging to this provider.
         """
-        self.addAlgorithm(DeepLearningToolsAlgorithm())
+        self.addAlgorithm(CreateTrainingLabelsFromLayerAlgorithm())
         # add additional algorithms here
         # self.addAlgorithm(MyOtherAlgorithm())
 

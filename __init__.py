@@ -35,5 +35,5 @@ def classFactory(iface):  # pylint: disable=invalid-name
     :type iface: QgsInterface
     """
     #
-    from .deep_learning_tools import DeepLearningToolsPlugin
-    return DeepLearningToolsPlugin()
+    from .deep_learning_tools import DeepLearningTools
+    return DeepLearningTools()

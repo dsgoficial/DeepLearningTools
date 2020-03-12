@@ -35,10 +35,12 @@ from qgis.core import (QgsProcessing,
                        QgsFeatureSink,
                        QgsProcessingAlgorithm,
                        QgsProcessingParameterFeatureSource,
-                       QgsProcessingParameterFeatureSink)
+                       QgsProcessingParameterFeatureSink,
+                       QgsProcessingParameterField
+                       )
 
 
-class DeepLearningToolsAlgorithm(QgsProcessingAlgorithm):
+class CreateTrainingLabelsFromLayerAlgorithm(QgsProcessingAlgorithm):
     """
     This is an example algorithm that takes a vector layer and
     creates a new identical one.
@@ -57,7 +59,10 @@ class DeepLearningToolsAlgorithm(QgsProcessingAlgorithm):
     # calling from the QGIS console.
 
     OUTPUT = 'OUTPUT'
+    IMAGE_ATTRIBUTE = 'IMAGE_ATTRIBUTE'
+    OUTPUT_LABEL_ATTRIBUTE_PATH = 'OUTPUT_LABEL_ATTRIBUTE_PATH'
     INPUT = 'INPUT'
+    INPUT_POLYGONS = 'INPUT_POLYGONS'
 
     def initAlgorithm(self, config):
         """
@@ -71,19 +76,34 @@ class DeepLearningToolsAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 self.tr('Input layer'),
-                [QgsProcessing.TypeVectorAnyGeometry]
+                [QgsProcessing.TypeVectorPolygon]
             )
         )
 
-        # We add a feature sink in which to store our processed features (this
-        # usually takes the form of a newly created vector layer when the
-        # algorithm is run in QGIS).
         self.addParameter(
-            QgsProcessingParameterFeatureSink(
-                self.OUTPUT,
-                self.tr('Output layer')
+            QgsProcessingParameterField(
+                self.IMAGE_ATTRIBUTE,
+                self.tr('Image attribute'),
+                self.INPUT
             )
         )
+
+        self.addParameter(
+            QgsProcessingParameterField(
+                self.OUTPUT_LABEL_ATTRIBUTE_PATH,
+                self.tr('Output label attribute'),
+                self.INPUT
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterFeatureSource(
+                self.INPUT_POLYGONS,
+                self.tr('Input polygons'),
+                [QgsProcessing.TypeVectorPolygon]
+            )
+        )
+
 
     def processAlgorithm(self, parameters, context, feedback):
         """
@@ -94,13 +114,23 @@ class DeepLearningToolsAlgorithm(QgsProcessingAlgorithm):
         # to uniquely identify the feature sink, and must be included in the
         # dictionary returned by the processAlgorithm function.
         source = self.parameterAsSource(parameters, self.INPUT, context)
-        (sink, dest_id) = self.parameterAsSink(parameters, self.OUTPUT,
-                context, source.fields(), source.wkbType(), source.sourceCrs())
 
         # Compute the number of steps to display within the progress bar and
         # get features from source
         total = 100.0 / source.featureCount() if source.featureCount() else 0
         features = source.getFeatures()
+
+        image_attribute = self.parameterAsFields(
+            parameters,
+            self.IMAGE_ATTRIBUTE,
+            context
+        )[0]
+
+        output_attribute = self.parameterAsFields(
+            parameters,
+            self.OUTPUT_LABEL_ATTRIBUTE_PATH,
+            context
+        )[0]
 
         for current, feature in enumerate(features):
             # Stop the algorithm if cancel button has been clicked
@@ -108,7 +138,8 @@ class DeepLearningToolsAlgorithm(QgsProcessingAlgorithm):
                 break
 
             # Add a feature in the sink
-            sink.addFeature(feature, QgsFeatureSink.FastInsert)
+            image_path = feature[image_attribute]
+            output_path = feature[output_attribute]
 
             # Update the progress bar
             feedback.setProgress(int(current * total))
@@ -119,7 +150,7 @@ class DeepLearningToolsAlgorithm(QgsProcessingAlgorithm):
         # statistics, etc. These should all be included in the returned
         # dictionary, with keys matching the feature corresponding parameter
         # or output names.
-        return {self.OUTPUT: dest_id}
+        return {}
 
     def name(self):
         """
@@ -159,4 +190,4 @@ class DeepLearningToolsAlgorithm(QgsProcessingAlgorithm):
         return QCoreApplication.translate('Processing', string)
 
     def createInstance(self):
-        return DeepLearningToolsAlgorithm()
+        return CreateTrainingLabelsFromLayerAlgorithm()
