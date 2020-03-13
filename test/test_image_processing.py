@@ -65,6 +65,7 @@ class TestImageProcessing(unittest.TestCase):
             polygon_lyr
         )
         generated_hash = hash_file(generated_label)
+        os.remove(generated_label)
         self.assertEqual(
             expected_hash,
             generated_hash
