@@ -106,6 +106,7 @@ class ImageUtils:
                 ogr.CreateGeometryFromWkt(wkt_geom)
             )
             return new_feat
+        temp_lyr.StartTransaction()
         for feat in input_lyr.getFeatures(request):
             new_feat = populate_temp_lyr(feat)
             temp_lyr.CreateFeature(new_feat)
@@ -115,10 +116,11 @@ class ImageUtils:
         #         map(populate_temp_lyr, input_lyr.getFeatures(request))
         #     )
         # )
-        return temp_lyr, temp
+        temp_lyr.CommitTransaction()
+        return temp_lyr, temp, driver, temp_ds
 
     def create_image_label(self, input_path, output_path, input_lyr,\
-        burn_value=255, nodata_value=0):
+        burn_value=0, nodata_value=0):
         """
         Creates image label with the same size as input_path
         """
@@ -126,9 +128,9 @@ class ImageUtils:
             input_path,
             output_path
         )
-        # band = self.get_band(output_ds, 1, nodata_value=nodata_value)
-        # band.FlushCache()
-        temp_lyr, temp = self.build_ogr_temp_layer(
+        band = self.get_band(output_ds, 1, nodata_value=nodata_value)
+        band.FlushCache()
+        temp_lyr, temp, driver, temp_ds = self.build_ogr_temp_layer(
             input_lyr,
             output_ds
         )
