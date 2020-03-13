@@ -107,20 +107,20 @@ class ImageUtils:
             )
             return new_feat
         temp_lyr.StartTransaction()
-        for feat in input_lyr.getFeatures(request):
-            new_feat = populate_temp_lyr(feat)
-            temp_lyr.CreateFeature(new_feat)
-            new_feat = None
-        # list(
-        #     map(temp_lyr.CreateFeature,
-        #         map(populate_temp_lyr, input_lyr.getFeatures(request))
-        #     )
-        # )
+        # for feat in input_lyr.getFeatures(request):
+        #     new_feat = populate_temp_lyr(feat)
+        #     temp_lyr.CreateFeature(new_feat)
+        #     new_feat = None
+        list(
+            map(temp_lyr.CreateFeature,
+                map(populate_temp_lyr, input_lyr.getFeatures(request))
+            )
+        )
         temp_lyr.CommitTransaction()
         return temp_lyr, temp, driver, temp_ds
 
     def create_image_label(self, input_path, output_path, input_lyr,\
-        burn_value=0, nodata_value=0):
+        burn_value=255, nodata_value=0):
         """
         Creates image label with the same size as input_path
         """

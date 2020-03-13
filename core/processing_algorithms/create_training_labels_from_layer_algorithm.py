@@ -22,22 +22,20 @@
  ***************************************************************************/
 """
 
-__author__ = 'Philipe Borba'
-__date__ = '2020-03-12'
-__copyright__ = '(C) 2020 by Philipe Borba'
-
-# This will get replaced with a git SHA1 when you do a git archive
-
-__revision__ = '$Format:%H$'
-
+import os
+from pathlib import Path
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import (QgsProcessing,
                        QgsFeatureSink,
                        QgsProcessingAlgorithm,
                        QgsProcessingParameterFeatureSource,
                        QgsProcessingParameterFeatureSink,
-                       QgsProcessingParameterField
+                       QgsProcessingParameterField,
+                       QgsProcessingParameterVectorLayer,
+                       QgsProcessingParameterBoolean,
+                       QgsProcessingException
                        )
+from DeepLearningTools.core.image_processing.image_utils import ImageUtils
 
 
 class CreateTrainingLabelsFromLayerAlgorithm(QgsProcessingAlgorithm):
@@ -63,6 +61,7 @@ class CreateTrainingLabelsFromLayerAlgorithm(QgsProcessingAlgorithm):
     OUTPUT_LABEL_ATTRIBUTE_PATH = 'OUTPUT_LABEL_ATTRIBUTE_PATH'
     INPUT = 'INPUT'
     INPUT_POLYGONS = 'INPUT_POLYGONS'
+    SELECTED = 'SELECTED'
 
     def initAlgorithm(self, config):
         """
@@ -73,7 +72,7 @@ class CreateTrainingLabelsFromLayerAlgorithm(QgsProcessingAlgorithm):
         # We add the input vector features source. It can have any kind of
         # geometry.
         self.addParameter(
-            QgsProcessingParameterFeatureSource(
+            QgsProcessingParameterVectorLayer(
                 self.INPUT,
                 self.tr('Input layer'),
                 [QgsProcessing.TypeVectorPolygon]
@@ -81,10 +80,19 @@ class CreateTrainingLabelsFromLayerAlgorithm(QgsProcessingAlgorithm):
         )
 
         self.addParameter(
+            QgsProcessingParameterBoolean(
+                self.SELECTED,
+                self.tr('Process only selected features')
+            )
+        )
+
+        self.addParameter(
             QgsProcessingParameterField(
                 self.IMAGE_ATTRIBUTE,
                 self.tr('Image attribute'),
-                self.INPUT
+                None, 
+                'INPUT',
+                QgsProcessingParameterField.Any
             )
         )
 
@@ -92,12 +100,14 @@ class CreateTrainingLabelsFromLayerAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterField(
                 self.OUTPUT_LABEL_ATTRIBUTE_PATH,
                 self.tr('Output label attribute'),
-                self.INPUT
+                None, 
+                'INPUT',
+                QgsProcessingParameterField.Any
             )
         )
 
         self.addParameter(
-            QgsProcessingParameterFeatureSource(
+            QgsProcessingParameterVectorLayer(
                 self.INPUT_POLYGONS,
                 self.tr('Input polygons'),
                 [QgsProcessing.TypeVectorPolygon]
@@ -113,12 +123,30 @@ class CreateTrainingLabelsFromLayerAlgorithm(QgsProcessingAlgorithm):
         # Retrieve the feature source and sink. The 'dest_id' variable is used
         # to uniquely identify the feature sink, and must be included in the
         # dictionary returned by the processAlgorithm function.
-        source = self.parameterAsSource(parameters, self.INPUT, context)
-
+        inputLyr = self.parameterAsVectorLayer(
+            parameters,
+            self.INPUT,
+            context
+        )
+        if inputLyr is None:
+            raise QgsProcessingException(
+                self.invalidSourceError(
+                    parameters,
+                    self.INPUT
+                )
+            )
+        onlySelected = self.parameterAsBool(
+            parameters,
+            self.SELECTED,
+            context
+        )
+        featCount = inputLyr.featureCount() if not onlySelected \
+            else inputLyr.selectedFeatureCount()
+        features = inputLyr.getFeatures() if not onlySelected \
+            else inputLyr.getSelectedFeatures()
         # Compute the number of steps to display within the progress bar and
         # get features from source
-        total = 100.0 / source.featureCount() if source.featureCount() else 0
-        features = source.getFeatures()
+        total = 100.0 / featCount if featCount else 0
 
         image_attribute = self.parameterAsFields(
             parameters,
@@ -131,16 +159,37 @@ class CreateTrainingLabelsFromLayerAlgorithm(QgsProcessingAlgorithm):
             self.OUTPUT_LABEL_ATTRIBUTE_PATH,
             context
         )[0]
-
+        image_utils = ImageUtils()
+        inputPolygonsLyr = self.parameterAsVectorLayer(
+            parameters,
+            self.INPUT_POLYGONS,
+            context
+        )
+        if inputPolygonsLyr is None:
+            raise QgsProcessingException(
+                self.invalidSourceError(
+                    parameters,
+                    self.INPUT_POLYGONS
+                )
+            )
         for current, feature in enumerate(features):
             # Stop the algorithm if cancel button has been clicked
             if feedback.isCanceled():
                 break
 
             # Add a feature in the sink
-            image_path = feature[image_attribute]
-            output_path = feature[output_attribute]
-
+            output_folder = os.path.dirname(
+                feature[output_attribute]
+            )
+            Path(output_folder).mkdir(
+                parents=True,
+                exist_ok=True
+            )
+            image_utils.create_image_label(
+                feature[image_attribute],
+                feature[output_attribute],
+                inputPolygonsLyr
+            )
             # Update the progress bar
             feedback.setProgress(int(current * total))
 
