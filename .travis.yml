@@ -17,4 +17,4 @@ install:
     - docker exec -it deeplearningtools-testing-env sh -c "ln -s /tests_directory/ /root/.local/share/QGIS/QGIS3/profiles/default/python/plugins/DeepLearningTools"
 
 script:
-    - docker exec -it dsgtools-testing-env sh -c "cd /tests_directory && qgis_testrunner.sh tests.test_image_processing"
+    - docker exec -it dsgtools-testing-env sh -c "cd /tests_directory && qgis_testrunner.sh tests.test_init && qgis_testrunner.sh tests.test_qgis_environment && qgis_testrunner.sh tests.test_image_processing"
