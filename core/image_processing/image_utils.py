@@ -23,8 +23,10 @@
 """
 from osgeo import gdal, osr, ogr
 gdal.UseExceptions()
-from qgis.core import QgsRectangle, QgsFeatureRequest,\
+from qgis.core import (
+    QgsRectangle, QgsFeatureRequest,
     QgsCoordinateTransformContext, QgsCoordinateReferenceSystem
+)
 
 class ImageUtils:
 
