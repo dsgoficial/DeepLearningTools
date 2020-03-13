@@ -33,9 +33,11 @@ from qgis.core import (QgsProcessing,
                        QgsProcessingParameterField,
                        QgsProcessingParameterVectorLayer,
                        QgsProcessingParameterBoolean,
-                       QgsProcessingException
+                       QgsProcessingException,
+                       QgsProcessingParameterNumber
                        )
 from DeepLearningTools.core.image_processing.image_utils import ImageUtils
+import concurrent.futures
 
 
 class CreateTrainingLabelsFromLayerAlgorithm(QgsProcessingAlgorithm):
@@ -62,6 +64,7 @@ class CreateTrainingLabelsFromLayerAlgorithm(QgsProcessingAlgorithm):
     INPUT = 'INPUT'
     INPUT_POLYGONS = 'INPUT_POLYGONS'
     SELECTED = 'SELECTED'
+    NUM_CPU = 'NUM_CPU'
 
     def initAlgorithm(self, config):
         """
@@ -111,6 +114,17 @@ class CreateTrainingLabelsFromLayerAlgorithm(QgsProcessingAlgorithm):
                 self.INPUT_POLYGONS,
                 self.tr('Input polygons'),
                 [QgsProcessing.TypeVectorPolygon]
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                self.NUM_CPU,
+                self.tr('Number of CPUs used in processing'),
+                QgsProcessingParameterNumber.Integer,
+                defaultValue=1,
+                minValue=1,
+                maxValue=os.cpu_count()
             )
         )
 
@@ -172,15 +186,15 @@ class CreateTrainingLabelsFromLayerAlgorithm(QgsProcessingAlgorithm):
                     self.INPUT_POLYGONS
                 )
             )
-        for current, feature in enumerate(features):
-            # Stop the algorithm if cancel button has been clicked
-            if feedback.isCanceled():
-                break
-
-            # Add a feature in the sink
+        num_workers = self.parameterAsInt(
+            parameters,
+            self.NUM_CPU,
+            context
+        )
+        def compute(feature):
             output_folder = os.path.dirname(
-                feature[output_attribute]
-            )
+                    feature[output_attribute]
+                )
             Path(output_folder).mkdir(
                 parents=True,
                 exist_ok=True
@@ -190,15 +204,21 @@ class CreateTrainingLabelsFromLayerAlgorithm(QgsProcessingAlgorithm):
                 feature[output_attribute],
                 inputPolygonsLyr
             )
-            # Update the progress bar
-            feedback.setProgress(int(current * total))
+        
+        pool = concurrent.futures.ThreadPoolExecutor(num_workers)
+        futures = []
+        current_feat = 0
+        for feat in features:
+            if feedback.isCanceled():
+                break
+            futures.append(pool.submit(compute, feat))
+        for x in concurrent.futures.as_completed(futures):
+            if feedback.isCanceled():
+                break
+            feedback.setProgress(int(current_feat * total))
+            current_feat += 1
+            # print(x.result())
 
-        # Return the results of the algorithm. In this case our only result is
-        # the feature sink which contains the processed features, but some
-        # algorithms may return multiple feature sinks, calculated numeric
-        # statistics, etc. These should all be included in the returned
-        # dictionary, with keys matching the feature corresponding parameter
-        # or output names.
         return {}
 
     def name(self):
