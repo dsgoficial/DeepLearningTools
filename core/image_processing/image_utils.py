@@ -21,68 +21,122 @@
  *                                                                         *
  ***************************************************************************/
 """
-from osgeo import gdal, osr 
+from osgeo import gdal, osr, ogr
+gdal.UseExceptions()
+from qgis.core import QgsRectangle, QgsFeatureRequest,\
+    QgsCoordinateTransformContext, QgsCoordinateReferenceSystem
 
 class ImageUtils:
 
-    @staticmethod
-    def set_output_srs_form_input(input_ds, output_ds):
+    def get_srs(self, input_ds):
+        raster_srs = osr.SpatialReference()
+        raster_srs.ImportFromWkt(
+            input_ds.GetProjectionRef()
+        )
+        return raster_srs
+
+    def set_output_srs_form_input(self, input_ds, output_ds):
         """
         Sets output srs the same as input
         """
-        raster_srs = osr.SpatialReference()
-        raster_srs.ImportFromWkt(input_ds.GetProjectionRef())
+        raster_srs = self.get_srs(input_ds)
+        output_ds.SetGeoTransform(input_ds.GetGeoTransform())
         output_ds.SetProjection(raster_srs.ExportToWkt())
 
-    @staticmethod
-    def get_output_raster_from_input(input_path, output_path):
+    def get_output_raster_from_input(self, input_path, output_path):
         """
         Gets the output raster equals to the input, but only with
         nodata.
         """
         input_ds = gdal.Open(input_path)
-        output_ds = gdal.GetDriverByName('GTiff').Create(
+        driver = gdal.GetDriverByName('GTiff')
+        output_ds = driver.Create(
             output_path,
             input_ds.RasterXSize,
             input_ds.RasterYSize,
             1,
             gdal.GDT_Byte
         )
-        set_output_srs_form_input(input_ds, output_ds)
+        self.set_output_srs_form_input(input_ds, output_ds)
+        input_ds = None
         return output_ds
 
-    @staticmethod
-    def get_band(raster_ds, band_number, nodata_value=0):
+    def get_band(self, raster_ds, band_number, nodata_value=0):
         band = raster_ds.GetRasterBand(band_number)
         band.Fill(nodata_value)
-        band.SetNoDataValue(nodata_value)
+        # band.SetNoDataValue(nodata_value)
         return band
+    
+    def get_extents(self, raster_ds):
+        geo_transform = raster_ds.GetGeoTransform()
+        xmin = geo_transform[0]
+        ymax = geo_transform[3]
+        xmax = xmin + geo_transform[1] * raster_ds.RasterXSize
+        ymin = ymax + geo_transform[5] * raster_ds.RasterYSize
+        return [xmin, ymin, xmax, ymax]
 
-    @staticmethod
-    def create_image_label(input_path, output_path, input_layer,\
-        burn_value=1, nodata_value=0):
+    def build_ogr_temp_layer(self, input_lyr, raster_ds):
+        driver = ogr.GetDriverByName('MEMORY')
+        temp_ds = driver.CreateDataSource('temp_data')
+        temp = driver.Open('temp_data', 1)
+        temp_lyr = temp_ds.CreateLayer(
+            "temp_layer",
+            self.get_srs(raster_ds),
+            geom_type=input_lyr.wkbType()
+        )
+        # burn
+        xmin, ymin, xmax, ymax = self.get_extents(raster_ds)
+        extents = QgsRectangle(
+            xmin, ymin, xmax, ymax
+        )
+        request = QgsFeatureRequest().setDestinationCrs(
+            QgsCoordinateReferenceSystem(
+                raster_ds.GetProjectionRef()
+            ),
+            QgsCoordinateTransformContext()
+        ).setFilterRect(extents)
+        field_name = "f"
+        field_id = ogr.FieldDefn(field_name, ogr.OFTInteger)
+        temp_lyr.CreateField(field_id)
+        feat_definition = temp_lyr.GetLayerDefn()
+        def populate_temp_lyr(feat):
+            wkt_geom = feat.geometry().asWkt()
+            new_feat = ogr.Feature(feat_definition)
+            new_feat.SetGeometry(
+                ogr.CreateGeometryFromWkt(wkt_geom)
+            )
+            return new_feat
+        for feat in input_lyr.getFeatures(request):
+            new_feat = populate_temp_lyr(feat)
+            temp_lyr.CreateFeature(new_feat)
+            new_feat = None
+        # list(
+        #     map(temp_lyr.CreateFeature,
+        #         map(populate_temp_lyr, input_lyr.getFeatures(request))
+        #     )
+        # )
+        return temp_lyr, temp
+
+    def create_image_label(self, input_path, output_path, input_lyr,\
+        burn_value=255, nodata_value=0):
         """
         Creates image label with the same size as input_path
         """
-        output_ds = get_output_raster_from_input(
+        output_ds = self.get_output_raster_from_input(
             input_path,
             output_path
         )
-        # band = get_band(input_ds, 0, nodata_value=nodata_value)
-        # xmin, ymin, xmax, ymax = data.GetGeoTransform()
-        
-        # # burn
-        # burnField = "burn"
-        # idField = ogr.FieldDefn(burnField, ogr.OFTInteger)
-        # outLayer.CreateField(idField)
-        # featureDefn = outLayer.GetLayerDefn()
-        # for geomShape in gdf['geometry'].values:
-        #     outFeature = ogr.Feature(featureDefn)
-        #     outFeature.SetGeometry(ogr.CreateGeometryFromWkt(
-        #                         geomShape.wkt))
-        #     outFeature.SetField(burnField, burnValue)
-        #     outLayer.CreateFeature(outFeature)
-        #     outFeature = 0
-        
-        gdal.RasterizeLayer(output_ds, [1], input_layer, 
-                        burn_values=[burn_value])
+        # band = self.get_band(output_ds, 1, nodata_value=nodata_value)
+        # band.FlushCache()
+        temp_lyr, temp = self.build_ogr_temp_layer(
+            input_lyr,
+            output_ds
+        )
+        gdal.RasterizeLayer(
+            output_ds,
+            [1],
+            temp_lyr,
+            burn_values=[burn_value]
+        )
+        output_ds = None
+        temp_lyr = None
