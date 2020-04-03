@@ -33,7 +33,8 @@ __revision__ = '$Format:%H$'
 from qgis.core import QgsProcessingProvider
 from DeepLearningTools.core.processing_algorithms.create_training_labels_from_layer_algorithm import \
     CreateTrainingLabelsFromLayerAlgorithm
-
+from DeepLearningTools.core.processing_algorithms.load_images_from_dataset_algorithm import \
+    LoadDatasetImagesAlgorithm
 
 class DeepLearningToolsProvider(QgsProcessingProvider):
 
@@ -50,11 +51,19 @@ class DeepLearningToolsProvider(QgsProcessingProvider):
         """
         pass
 
+    def getAlgList(self):
+        algList = [
+            CreateTrainingLabelsFromLayerAlgorithm(),
+            LoadDatasetImagesAlgorithm()
+        ]
+        return algList
+
     def loadAlgorithms(self):
         """
         Loads all algorithms belonging to this provider.
         """
-        self.addAlgorithm(CreateTrainingLabelsFromLayerAlgorithm())
+        for alg in self.getAlgList():
+            self.addAlgorithm(alg)
         # add additional algorithms here
         # self.addAlgorithm(MyOtherAlgorithm())
 
