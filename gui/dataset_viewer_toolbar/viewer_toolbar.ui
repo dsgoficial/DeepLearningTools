@@ -54,7 +54,7 @@
     </widget>
    </item>
    <item row="0" column="3">
-    <widget class="QgsFieldComboBox" name="mFieldComboBox">
+    <widget class="QgsFieldComboBox" name="imageFieldComboBox">
      <property name="sizePolicy">
       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Minimum">
        <horstretch>0</horstretch>
@@ -77,7 +77,7 @@
     </widget>
    </item>
    <item row="0" column="5">
-    <widget class="QgsFieldComboBox" name="mFieldComboBox_2">
+    <widget class="QgsFieldComboBox" name="labelFieldComboBox">
      <property name="sizePolicy">
       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Minimum">
        <horstretch>0</horstretch>
@@ -87,7 +87,10 @@
     </widget>
    </item>
    <item row="0" column="6">
-    <widget class="QPushButton" name="pushButton">
+    <widget class="QPushButton" name="activatePushButton">
+     <property name="toolTip">
+      <string>Activate/Refresh</string>
+     </property>
      <property name="text">
       <string/>
      </property>
@@ -114,5 +117,38 @@
  <resources>
   <include location="../../resources.qrc"/>
  </resources>
- <connections/>
+ <connections>
+  <connection>
+   <sender>mMapLayerComboBox</sender>
+   <signal>layerChanged(QgsMapLayer*)</signal>
+   <receiver>imageFieldComboBox</receiver>
+   <slot>setLayer(QgsMapLayer*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>24</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>472</x>
+     <y>20</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>mMapLayerComboBox</sender>
+   <signal>layerChanged(QgsMapLayer*)</signal>
+   <receiver>labelFieldComboBox</receiver>
+   <slot>setLayer(QgsMapLayer*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>93</x>
+     <y>28</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>737</x>
+     <y>27</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>
