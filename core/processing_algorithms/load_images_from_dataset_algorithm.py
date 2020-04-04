@@ -37,11 +37,15 @@ from qgis.core import (QgsProcessing,
                        QgsProcessingException,
                        QgsProcessingParameterNumber,
                        QgsProcessingParameterExpression,
+                       QgsProcessingParameterString,
                        QgsProcessingOutputMultipleLayers,
                        QgsProcessingParameterExtent,
                        QgsFeatureRequest,
                        QgsProject,
-                       QgsRasterLayer
+                       QgsRasterLayer,
+                       QgsExpression,
+                       QgsExpressionContext,
+                       QgsExpressionContextUtils
                        )
 from DeepLearningTools.core.image_processing.image_utils import ImageUtils
 from qgis.utils import iface
@@ -60,7 +64,9 @@ class LoadDatasetImagesAlgorithm(QgsProcessingAlgorithm):
     EXTENT = 'EXTENT'
     IMAGE_ATTRIBUTE = 'IMAGE_ATTRIBUTE'
     GROUP_EXPRESSION = 'GROUP_EXPRESSION'
+    NAME_TAG = 'NAME_TAG'
     ADD_TO_CANVAS = 'ADD_TO_CANVAS'
+    UNIQUE_LOAD = 'UNIQUE_LOAD'
     OUTPUT = 'OUTPUT'
     def initAlgorithm(self, config):
         """
@@ -97,17 +103,32 @@ class LoadDatasetImagesAlgorithm(QgsProcessingAlgorithm):
             )
         )
         self.addParameter(
+            QgsProcessingParameterBoolean(
+                self.ADD_TO_CANVAS,
+                self.tr('Add to canvas'),
+                defaultValue=True
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterBoolean(
+                self.UNIQUE_LOAD,
+                self.tr('Unique load'),
+                defaultValue=True
+            )
+        )
+        self.addParameter(
             QgsProcessingParameterExpression(
                 self.GROUP_EXPRESSION,
-                self.tr('Expression used to group images'),
+                self.tr('Group expression'),
                 defaultValue="",
                 optional=True
             )
         )
         self.addParameter(
-            QgsProcessingParameterBoolean(
-                self.ADD_TO_CANVAS,
-                self.tr('Add to canvas'),
+            QgsProcessingParameterString(
+                self.NAME_TAG,
+                self.tr('String used as prefix in images'),
+                defaultValue="",
                 optional=True
             )
         )
@@ -144,9 +165,14 @@ class LoadDatasetImagesAlgorithm(QgsProcessingAlgorithm):
             self.IMAGE_ATTRIBUTE,
             context
         )[0]
-        nodeExpression = self.parameterAsExpression(
+        groupExpression = self.parameterAsExpression(
             parameters,
             self.GROUP_EXPRESSION,
+            context
+        )
+        imageTag = self.parameterAsString(
+            parameters,
+            self.NAME_TAG,
             context
         )
         boundingBoxGeometry = self.parameterAsExtentGeometry(
@@ -159,6 +185,16 @@ class LoadDatasetImagesAlgorithm(QgsProcessingAlgorithm):
             self.ADD_TO_CANVAS,
             context
         )
+        uniqueLoad = self.parameterAsBoolean(
+            parameters,
+            self.UNIQUE_LOAD,
+            context
+        )
+        loadedLayers = [
+            i.dataProvider().dataSourceUri()
+                for i in iface.mapCanvas().layers()\
+                    if isinstance(i, QgsRasterLayer)
+            ] if uniqueLoad else []
         request = QgsFeatureRequest()
         if boundingBoxGeometry is not None:
             request.setFilterRect(boundingBoxGeometry.boundingBox())
@@ -187,47 +223,31 @@ class LoadDatasetImagesAlgorithm(QgsProcessingAlgorithm):
         for current, feat in enumerate(featList):
             if feedback.isCanceled():
                 break
+            if feat[attributeName] in loadedLayers:
+                continue
             newImage = QgsRasterLayer(
                 feat[attributeName],
-                os.path.basename(feat[attributeName])
+                '_'.join(
+                    [imageTag, os.path.basename(feat[attributeName])] if imageTag != ''\
+                    else [os.path.basename(feat[attributeName])]
+                )
             )
             QgsProject.instance().addMapLayer(newImage, False)
             if datasetImageNode is not None:
-                datasetImageNode.addLayer(newImage)
+                currentNode = datasetImageNode if groupExpression is None\
+                    else self.getLayerCategoryNode(
+                        newImage,
+                        datasetImageNode,
+                        groupExpression
+                    )
+                currentNode.addLayer(newImage)
             outputImages.append(newImage)
+            loadedLayers.append(feat[attributeName])
             feedback.setProgress(current*progressStep)
         if loadToCanvas:
             iface.mapCanvas().freeze(False)
+            iface.mapCanvas().refresh()
         return {self.OUTPUT: [i.id() for i in outputImages]}
-
-    def getLayerRootNode(self, lyr, rootNode):
-        """
-        Finds the database name of the layer and creates (if not exists)
-        a node with the found name.
-        lyr: (QgsVectorLayer)
-        rootNode: (node item)
-        """
-        uriText = lyr.dataProvider().dataSourceUri()
-        candidateUri = QgsDataSourceUri(uriText)
-        rootNodeName = candidateUri.database()
-        if not rootNodeName:
-            rootNodeName = self.getRootNodeName(uriText)
-        #creates database root
-        return self.createGroup(rootNodeName, rootNode)
-
-    def getRootNodeName(self, uriText):
-        """
-        Gets root node name from uri according to provider type.
-        """
-        if 'memory?' in uriText:
-            rootNodeName = 'memory'
-        elif 'dbname' in uriText:
-            rootNodeName = uriText.replace('dbname=', '').split(' ')[0]
-        elif '|' in uriText:
-            rootNodeName = os.path.dirname(uriText.split(' ')[0].split('|')[0])
-        else:
-            rootNodeName = 'unrecognised_format'
-        return rootNodeName
 
     def getLayerCategoryNode(self, lyr, rootNode, categoryExpression):
         """
