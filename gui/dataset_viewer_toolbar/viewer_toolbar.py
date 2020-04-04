@@ -46,12 +46,25 @@ class ViewerToolbar(QWidget,FORM_CLASS):
         super(ViewerToolbar, self).__init__(parent)
         self.iface = iface
         self.loaded_label_ids = set()
+
         self.setupUi(self)
     
     def unload(self):
-        pass
+        try:
+            self.set_dynamic_mode(False)
+        except:
+            pass
+    
+    @pyqtSlot(bool, name = 'on_dynamicPushButton_toggled')
+    def set_dynamic_mode(self, toggled):
+        if toggled:
+            self.iface.mapCanvas().extentsChanged.connect(self.update_loaded_layers)
+        else:
+            self.iface.mapCanvas().extentsChanged.disconnect(self.update_loaded_layers)
 
-    def on_activatePushButton_clicked(self):
+
+    @pyqtSlot(name = 'on_activatePushButton_clicked')
+    def update_loaded_layers(self):
         index_layer = self.mMapLayerComboBox.currentLayer()
         image_path = self.imageFieldComboBox.currentField()
         label_path = self.labelFieldComboBox.currentField()
@@ -88,7 +101,7 @@ class ViewerToolbar(QWidget,FORM_CLASS):
             return
         self.iface.mapCanvas().freeze(True)
         layers_to_remove = set(
-            lyr_id for lyr_id in self.loaded_label_ids if self.loaded_label_ids not in loadedSet
+            lyr_id for lyr_id in self.loaded_label_ids if lyr_id not in loadedSet
         )
         QgsProject.instance().removeMapLayers(
             layers_to_remove

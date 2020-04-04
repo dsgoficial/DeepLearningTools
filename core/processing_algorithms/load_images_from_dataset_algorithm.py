@@ -190,11 +190,12 @@ class LoadDatasetImagesAlgorithm(QgsProcessingAlgorithm):
             self.UNIQUE_LOAD,
             context
         )
-        loadedLayers = [
-            i.dataProvider().dataSourceUri()
+        loadedLayers = {
+            i.dataProvider().dataSourceUri() : i.id()
                 for i in iface.mapCanvas().layers()\
                     if isinstance(i, QgsRasterLayer)
-            ] if uniqueLoad else []
+         } if uniqueLoad else {}
+        outputLayers = {}
         request = QgsFeatureRequest()
         if boundingBoxGeometry is not None:
             request.setFilterRect(boundingBoxGeometry.boundingBox())
@@ -219,17 +220,19 @@ class LoadDatasetImagesAlgorithm(QgsProcessingAlgorithm):
             iface.mapCanvas().freeze(True)
         else:
             datasetImageNode = None
-        outputImages = []
         for current, feat in enumerate(featList):
             if feedback.isCanceled():
                 break
-            if feat[attributeName] in loadedLayers:
+            image_path = feat[attributeName]
+            if image_path in loadedLayers:
+                outputLayers[image_path] = loadedLayers[image_path]
+                feedback.setProgress(current*progressStep)
                 continue
             newImage = QgsRasterLayer(
-                feat[attributeName],
+                image_path,
                 '_'.join(
-                    [imageTag, os.path.basename(feat[attributeName])] if imageTag != ''\
-                    else [os.path.basename(feat[attributeName])]
+                    [imageTag, os.path.basename(image_path)] if imageTag != ''\
+                    else [os.path.basename(image_path)]
                 )
             )
             QgsProject.instance().addMapLayer(newImage, False)
@@ -241,13 +244,12 @@ class LoadDatasetImagesAlgorithm(QgsProcessingAlgorithm):
                         groupExpression
                     )
                 currentNode.addLayer(newImage)
-            outputImages.append(newImage)
-            loadedLayers.append(feat[attributeName])
+            outputLayers[image_path] = newImage.id()
             feedback.setProgress(current*progressStep)
         if loadToCanvas:
             iface.mapCanvas().freeze(False)
             iface.mapCanvas().refresh()
-        return {self.OUTPUT: [i.id() for i in outputImages]}
+        return {self.OUTPUT: list(outputLayers.values())}
 
     def getLayerCategoryNode(self, lyr, rootNode, categoryExpression):
         """
