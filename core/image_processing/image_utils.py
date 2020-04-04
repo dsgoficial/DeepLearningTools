@@ -145,9 +145,4 @@ class ImageUtils:
         )
         output_ds = None
         temp_lyr = None
-    
-    def load_image_layer(self, lyr_path, lyr_name, parent_node=None):
-        lyr = QgsRasterLayer(lyr_path, lyr_name)
-        if parent_node is not None:
-            parent_node.addChild(lyr.id())
-        return lyr
+

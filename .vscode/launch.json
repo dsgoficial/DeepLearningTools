@@ -13,7 +13,7 @@
             "pathMappings": [
                 {
                     "localRoot": "${workspaceFolder}",
-                    "remoteRoot": "/Users/philipeborba/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins/DeepLearningTools"
+                    "remoteRoot": "${workspaceFolder}"
                 }
             ]
         }

@@ -40,7 +40,8 @@ from qgis.core import (QgsProcessing,
                        QgsProcessingOutputMultipleLayers,
                        QgsProcessingParameterExtent,
                        QgsFeatureRequest,
-                       QgsProject
+                       QgsProject,
+                       QgsRasterLayer
                        )
 from DeepLearningTools.core.image_processing.image_utils import ImageUtils
 from qgis.utils import iface
@@ -182,16 +183,17 @@ class LoadDatasetImagesAlgorithm(QgsProcessingAlgorithm):
             iface.mapCanvas().freeze(True)
         else:
             datasetImageNode = None
-        imageUtils = ImageUtils()
         outputImages = []
         for current, feat in enumerate(featList):
             if feedback.isCanceled():
                 break
-            newImage = imageUtils.load_image_layer(
+            newImage = QgsRasterLayer(
                 feat[attributeName],
-                os.path.basename(feat[attributeName]).split('.')[0],
-                parent_node=datasetImageNode
+                os.path.basename(feat[attributeName])
             )
+            QgsProject.instance().addMapLayer(newImage, False)
+            if datasetImageNode is not None:
+                datasetImageNode.addLayer(newImage)
             outputImages.append(newImage)
             feedback.setProgress(current*progressStep)
         if loadToCanvas:

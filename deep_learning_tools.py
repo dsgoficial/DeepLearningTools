@@ -44,7 +44,7 @@ if cmd_folder not in sys.path:
 
 try:
     import ptvsd
-    ptvsd.enable_attach(address = ('localhost', 5679))
+    ptvsd.enable_attach(address = ('localhost', 5677))
 except Exception as e:
     pass
 
