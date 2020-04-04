@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/DeepLearningTools" >
+        <file>icons/refresh.png</file>
+    </qresource>
+</RCC>

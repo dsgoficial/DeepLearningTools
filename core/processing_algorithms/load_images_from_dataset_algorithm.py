@@ -254,16 +254,19 @@ class LoadDatasetImagesAlgorithm(QgsProcessingAlgorithm):
         Finds category node based on category expression
         and creates it (if not exists a node)
         """
-        exp = QgsExpression(categoryExpression)
-        context = QgsExpressionContext()
-        context.appendScopes(
-            QgsExpressionContextUtils.globalProjectLayerScopes(lyr)
-        )
-        if exp.hasParserError():
-            raise Exception(exp.parserErrorString())
-        if exp.hasEvalError():
-            raise ValueError(exp.evalErrorString())
-        categoryText = exp.evaluate(context)
+        try:
+            exp = QgsExpression(categoryExpression)
+            context = QgsExpressionContext()
+            context.appendScopes(
+                QgsExpressionContextUtils.globalProjectLayerScopes(lyr)
+            )
+            if exp.hasParserError():
+                raise Exception(exp.parserErrorString())
+            if exp.hasEvalError():
+                raise ValueError(exp.evalErrorString())
+            categoryText = exp.evaluate(context)
+        except:
+            return rootNode
         return self.createGroup(categoryText, rootNode)
 
     def createGroup(self, groupName, rootNode):
