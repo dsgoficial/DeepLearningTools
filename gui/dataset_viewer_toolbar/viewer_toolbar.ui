@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>766</width>
-    <height>45</height>
+    <width>559</width>
+    <height>44</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -20,7 +20,7 @@
    <string>Form</string>
   </property>
   <property name="toolTip">
-   <string>Apply/Refresh</string>
+   <string/>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
@@ -98,12 +98,30 @@
       </property>
      </widget>
      <widget class="QPushButton" name="dynamicPushButton">
+      <property name="toolTip">
+       <string>Activate Dynamic View</string>
+      </property>
       <property name="text">
        <string/>
       </property>
       <property name="icon">
        <iconset resource="../../resources.qrc">
         <normaloff>:/plugins/DeepLearningTools/icons/dynamic.png</normaloff>:/plugins/DeepLearningTools/icons/dynamic.png</iconset>
+      </property>
+      <property name="checkable">
+       <bool>true</bool>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="sideBySidePushButton">
+      <property name="toolTip">
+       <string>Activate Side By Side View</string>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="icon">
+       <iconset resource="../../resources.qrc">
+        <normaloff>:/plugins/DeepLearningTools/icons/dual_view.png</normaloff>:/plugins/DeepLearningTools/icons/dual_view.png</iconset>
       </property>
       <property name="checkable">
        <bool>true</bool>

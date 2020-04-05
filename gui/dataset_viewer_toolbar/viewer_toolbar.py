@@ -22,6 +22,7 @@
  ***************************************************************************/
 """
 import os
+from functools import partial
 from qgis.PyQt.QtWidgets import QMessageBox, QSpinBox, QAction, QWidget
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QSettings, pyqtSignal, pyqtSlot, QObject, Qt
@@ -30,7 +31,7 @@ from qgis.PyQt.Qt import QObject
 
 from qgis.core import QgsMapLayer, Qgis, QgsVectorLayer,\
     QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsFeatureRequest,\
-    QgsWkbTypes, QgsProject
+    QgsWkbTypes, QgsProject, QgsRasterLayer
 from qgis.gui import QgsMessageBar
 import processing
 
@@ -46,8 +47,8 @@ class ViewerToolbar(QWidget,FORM_CLASS):
         super(ViewerToolbar, self).__init__(parent)
         self.iface = iface
         self.loaded_label_ids = set()
-
         self.setupUi(self)
+        self.labelView = None
     
     def unload(self):
         try:
@@ -58,9 +59,40 @@ class ViewerToolbar(QWidget,FORM_CLASS):
     @pyqtSlot(bool, name = 'on_dynamicPushButton_toggled')
     def set_dynamic_mode(self, toggled):
         if toggled:
-            self.iface.mapCanvas().extentsChanged.connect(self.update_loaded_layers)
+            self.iface.mapCanvas().extentsChanged.connect(
+                self.update_loaded_layers
+            )
         else:
-            self.iface.mapCanvas().extentsChanged.disconnect(self.update_loaded_layers)
+            self.iface.mapCanvas().extentsChanged.disconnect(
+                self.update_loaded_layers
+            )
+    
+    @pyqtSlot(bool, name = 'on_sideBySidePushButton_toggled')
+    def create_label_view(self):
+        if self.labelView is None:
+            self.labelView = self.iface.createNewMapCanvas(self.tr('Label View'))
+            self.labelView.setLayers(
+                [
+                    i for i in self.iface.mapCanvas().layers()\
+                        if isinstance(i, QgsRasterLayer) and 'label_' in i.name()
+                ]
+            )
+            self.labelView.destroyed.connect(
+                self.delete_view
+            )
+            self.iface.mapCanvas().extentsChanged.connect(
+                self.set_label_view_extent
+            )
+    
+    def set_label_view_extent(self):
+        self.labelView.setExtent(self.iface.mapCanvas().extent())
+        self.labelView.setScale(self.iface.mapCanvas().scale())
+    
+    def delete_view(self):
+        self.iface.mapCanvas().extentsChanged.disconnect(
+                self.set_label_view_extent
+            )
+        self.labelView = None
 
 
     @pyqtSlot(name = 'on_activatePushButton_clicked')

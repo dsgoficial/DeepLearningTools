@@ -2,5 +2,6 @@
     <qresource prefix="/plugins/DeepLearningTools" >
         <file>icons/refresh.png</file>
         <file>icons/dynamic.png</file>
+        <file>icons/dual_view.png</file>
     </qresource>
 </RCC>
