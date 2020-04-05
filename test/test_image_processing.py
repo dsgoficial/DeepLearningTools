@@ -70,6 +70,36 @@ class TestImageProcessing(unittest.TestCase):
             expected_hash,
             generated_hash
         )
+    
+    def test_create_image_label_png(self):
+        image_utils = ImageUtils()
+        current_folder = os.path.dirname(os.path.abspath(__file__))
+        test_data_dir = os.path.join(current_folder, 'test_data')
+        test_dataset_dir = os.path.join(test_data_dir, 'test_dataset')
+
+        input_image = os.path.join(test_dataset_dir, 'images/10.png')
+        input_polygon_lyr_path = os.path.join(
+            test_data_dir,
+            'test_polygons2.geojson'
+        )
+        polygon_lyr = QgsVectorLayer(
+            input_polygon_lyr_path, 'test_polygons2', 'ogr'
+        )
+        expected_label = os.path.join(test_dataset_dir, 'labels/10.png')
+        expected_hash = hash_file(expected_label)
+
+        generated_label = os.path.join(current_folder, '10_output.png')
+        image_utils.create_image_label(
+            input_image,
+            generated_label,
+            polygon_lyr
+        )
+        generated_hash = hash_file(generated_label)
+        os.remove(generated_label)
+        self.assertEqual(
+            expected_hash,
+            generated_hash
+        )
 
 def hash_file(filename):
     """"This function returns the SHA-1 hash

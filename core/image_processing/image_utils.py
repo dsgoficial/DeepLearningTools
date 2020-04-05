@@ -21,6 +21,8 @@
  *                                                                         *
  ***************************************************************************/
 """
+import os, uuid
+import tempfile
 from osgeo import gdal, osr, ogr
 gdal.UseExceptions()
 from qgis.core import (
@@ -61,8 +63,7 @@ class ImageUtils:
             gdal.GDT_Byte
         )
         self.set_output_srs_form_input(input_ds, output_ds)
-        input_ds = None
-        return output_ds
+        return input_ds, output_ds
 
     def get_band(self, raster_ds, band_number, nodata_value=0):
         band = raster_ds.GetRasterBand(band_number)
@@ -127,15 +128,17 @@ class ImageUtils:
         """
         Creates image label with the same size as input_path
         """
-        output_ds = self.get_output_raster_from_input(
+        output_temp_path = output_path if '.tif' in output_path\
+            else tempfile.mkstemp(suffix='.tif')[1]
+        input_ds, output_ds = self.get_output_raster_from_input(
             input_path,
-            output_path
+            output_temp_path
         )
         band = self.get_band(output_ds, 1, nodata_value=nodata_value)
         band.FlushCache()
         temp_lyr, temp, driver, temp_ds = self.build_ogr_temp_layer(
             input_lyr,
-            output_ds
+            input_ds
         )
         gdal.RasterizeLayer(
             output_ds,
@@ -145,4 +148,14 @@ class ImageUtils:
         )
         output_ds = None
         temp_lyr = None
+        if '.tif' not in input_path:
+            driver = input_ds.GetDriver()
+            temp_ds = gdal.Open(output_temp_path)
+            new_output = driver.CreateCopy(output_path, temp_ds, 0)
+            new_output = None
+            os.remove(output_temp_path)
+        input_ds = None
+            
+
+        
 
