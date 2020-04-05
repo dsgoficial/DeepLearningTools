@@ -68,8 +68,8 @@ class ViewerToolbar(QWidget,FORM_CLASS):
             )
     
     @pyqtSlot(bool, name = 'on_sideBySidePushButton_toggled')
-    def create_label_view(self):
-        if self.labelView is None:
+    def create_label_view(self, toggled):
+        if self.labelView is None and toggled:
             self.labelView = self.iface.createNewMapCanvas(self.tr('Label View'))
             self.labelView.setLayers(
                 [
@@ -85,13 +85,18 @@ class ViewerToolbar(QWidget,FORM_CLASS):
             )
     
     def set_label_view_extent(self):
+        self.labelView.blockSignals(True)
         self.labelView.setExtent(self.iface.mapCanvas().extent())
-        self.labelView.setScale(self.iface.mapCanvas().scale())
+        self.labelView.zoomScale(self.iface.mapCanvas().scale())
+        self.labelView.blockSignals(False)
     
     def delete_view(self):
+        self.sideBySidePushButton.blockSignals(True)
+        self.sideBySidePushButton.setChecked(False)
         self.iface.mapCanvas().extentsChanged.disconnect(
                 self.set_label_view_extent
             )
+        self.sideBySidePushButton.blockSignals(False)
         self.labelView = None
 
 
