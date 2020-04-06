@@ -211,14 +211,14 @@ class CreateTrainingLabelsFromLayerAlgorithm(QgsProcessingAlgorithm):
         for feat in features:
             if feedback.isCanceled():
                 break
-            compute(feat)
-        #     futures.append(pool.submit(compute, feat))
-        # for x in concurrent.futures.as_completed(futures):
-        #     if feedback.isCanceled():
-        #         break
+            # compute(feat)
+            futures.append(pool.submit(compute, feat))
+        for x in concurrent.futures.as_completed(futures):
+            if feedback.isCanceled():
+                break
             feedback.setProgress(int(current_feat * total))
-        #     current_feat += 1
-        #     # print(x.result())
+            current_feat += 1
+            # print(x.result())
 
         return {}
 
