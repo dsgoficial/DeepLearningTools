@@ -35,6 +35,8 @@ from DeepLearningTools.core.processing_algorithms.create_training_labels_from_la
     CreateTrainingLabelsFromLayerAlgorithm
 from DeepLearningTools.core.processing_algorithms.load_images_from_dataset_algorithm import \
     LoadDatasetImagesAlgorithm
+from DeepLearningTools.core.processing_algorithms.create_grid_algorithm import \
+    CreateGridAlgorithm
 
 class DeepLearningToolsProvider(QgsProcessingProvider):
 
@@ -54,7 +56,8 @@ class DeepLearningToolsProvider(QgsProcessingProvider):
     def getAlgList(self):
         algList = [
             CreateTrainingLabelsFromLayerAlgorithm(),
-            LoadDatasetImagesAlgorithm()
+            LoadDatasetImagesAlgorithm(),
+            CreateGridAlgorithm()
         ]
         return algList
 
