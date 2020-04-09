@@ -210,15 +210,15 @@ class CreateGridAlgorithm(QgsProcessingAlgorithm):
                         QgsFeatureSink.FastInsert
                     )
                     break
-            self.stepProgress(feedback)
+            self.current_feat += 1
+            if feedback is not None:
+                feedback.setProgress(
+                    int(self.current_feat * self.total)
+                )
             return
-        # else:
-            
-        #     def compute(polygon_feature):
-
 
         self.current_feat = 0
-        with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+        with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = {
                 executor.submit(compute, task): task
                 for task in itertools.islice(features, num_feats_per_worker)
@@ -242,14 +242,6 @@ class CreateGridAlgorithm(QgsProcessingAlgorithm):
                 )
             return {self.OUTPUT : dest_id}
     
-    def stepProgress(self, feedback):
-        self.current_feat += 1
-        if feedback is not None:
-            feedback.setProgress(
-                int(self.current_feat * self.total)
-            )
-
-
     def name(self):
         """
         Returns the algorithm name, used for identifying the algorithm. This
