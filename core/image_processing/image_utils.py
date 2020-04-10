@@ -153,8 +153,13 @@ class ImageUtils:
             temp_ds = gdal.Open(output_temp_path)
             new_output = driver.CreateCopy(output_path, temp_ds, 0)
             new_output = None
+            driver = None
             os.remove(output_temp_path)
         input_ds = None
+        temp = None
+        temp_ds = None
+        driver = None
+
             
 
         
