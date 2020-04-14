@@ -37,6 +37,8 @@ from DeepLearningTools.core.processing_algorithms.load_images_from_dataset_algor
     LoadDatasetImagesAlgorithm
 from DeepLearningTools.core.processing_algorithms.create_grid_algorithm import \
     CreateGridAlgorithm
+from DeepLearningTools.core.processing_algorithms.create_train_test_validate_samples_algorithm import \
+    CreateTrainTestValidateSamplesAlgorithm
 
 class DeepLearningToolsProvider(QgsProcessingProvider):
 
@@ -57,7 +59,8 @@ class DeepLearningToolsProvider(QgsProcessingProvider):
         algList = [
             CreateTrainingLabelsFromLayerAlgorithm(),
             LoadDatasetImagesAlgorithm(),
-            CreateGridAlgorithm()
+            CreateGridAlgorithm(),
+            CreateTrainTestValidateSamplesAlgorithm()
         ]
         return algList
 

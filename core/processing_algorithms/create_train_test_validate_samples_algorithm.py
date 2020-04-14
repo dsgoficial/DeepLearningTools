@@ -46,13 +46,16 @@ from qgis.core import (QgsProcessing,
                        QgsExpression,
                        QgsExpressionContext,
                        QgsExpressionContextUtils,
-                       QgsSpatialIndex
+                       QgsSpatialIndex,
+                       QgsProcessingMultiStepFeedback,
+                       QgsProcessingFeatureSourceDefinition
                        )
 from DeepLearningTools.core.image_processing.image_utils import ImageUtils
 from qgis.utils import iface
+import processing
+import math, random
 
-
-class CreateTrainTestSamplesAlgorithm(QgsProcessingAlgorithm):
+class CreateTrainTestValidateSamplesAlgorithm(QgsProcessingAlgorithm):
     """
     Algorithm to group layers according to primitive, dataset and a category.
     INPUT_LAYERS: list of QgsVectorLayer
@@ -61,132 +64,136 @@ class CreateTrainTestSamplesAlgorithm(QgsProcessingAlgorithm):
     OUTPUT: list of outputs
     """
     INPUT = 'INPUT'
-    SELECTED = 'SELECTED'
+    PK_FIELD = 'PK_FIELD'
     TRAIN_PERCENTAGE = 'TRAIN_PERCENTAGE'
+    TEST_PERCENTAGE = 'TEST_PERCENTAGE'
     TRAIN_DATASET = 'TRAIN_DATASET'
     TEST_DATASET = 'TEST_DATASET'
+    VALIDATION_DATASET = 'VALIDATION_DATASET'
     def initAlgorithm(self, config):
         """
         Parameter setting.
         """
         self.addParameter(
-            QgsProcessingParameterVectorLayer(
+            QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 self.tr('Input layer'),
-                [QgsProcessing.TypeVectorPolygon]
+                [QgsProcessing.TypeVector]
             )
         )
 
         self.addParameter(
-            QgsProcessingParameterBoolean(
-                self.SELECTED,
-                self.tr('Process only selected features')
+            QgsProcessingParameterNumber(
+                self.TRAIN_PERCENTAGE,
+                self.tr('Train dataset percentage'),
+                minValue=0,
+                defaultValue=60,
+                maxValue=100
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.TRAIN_PERCENTAGE,
-                self.tr('Train dataset percentage (test percentage will be the complement'),
+                self.TEST_PERCENTAGE,
+                self.tr('Test dataset percentage (validate percentage will be the complement of the sum of train and test)'),
                 minValue=0,
-                maxValue=1
+                defaultValue=20,
+                maxValue=100
             )
         )
-        self.addOutput(
-            QgsProcessingOutputVectorLayer(
+        self.addParameter(
+            QgsProcessingParameterFeatureSink(
                 self.TRAIN_DATASET,
                 self.tr('Train dataset')
             )
         )
-        self.addOutput(
-            QgsProcessingOutputVectorLayer(
+        self.addParameter(
+            QgsProcessingParameterFeatureSink(
                 self.TEST_DATASET,
                 self.tr('Test dataset')
             )
         )
+        self.addParameter(
+            QgsProcessingParameterFeatureSink(
+                self.VALIDATION_DATASET,
+                self.tr('Validation dataset')
+            )
+        )
+
 
     def processAlgorithm(self, parameters, context, feedback):
         """
         Here is where the processing itself takes place.
         """
-        inputLyr = self.parameterAsVectorLayer(
+        source = self.parameterAsSource(
             parameters,
             self.INPUT,
             context
         )
-        if inputLyr is None:
-            raise QgsProcessingException(
-                self.invalidSourceError(
-                    parameters,
-                    self.INPUT
-                )
-            )
-        onlySelected = self.parameterAsBool(
-            parameters,
-            self.SELECTED,
-            context
-        )
+
         trainPercentage = self.parameterAsDouble(
             parameters,
             self.TRAIN_PERCENTAGE,
             context
         )
-        
-        features = inputLyr.getFeatures() if not onlySelected \
-            else inputLyr.getSelectedFeatures()
-        #calculate size
-
-        #remaining parameters
-
-        #1. Buffer
-        #2. Spatial Index
-        #3.
-        multiStepFeedback = QgsProcessingMultiStepFeedback(3, feedback)
-        multiStepFeedback.setCurrentStep(0)
-        output = procesing.run(
-            "native:buffer"
-            {
-                'INPUT': features,
-                'DISTANCE': -1,
-                'SEGMENTS': 5,
-                'END_CAP_STYLE': 0,
-                'JOIN_STYLE': 0,
-                'MITER_LIMIT': 2,
-                'DISSOLVE': False,
-                'OUTPUT': 'memory:'
-            },
-            context=context,
-            feedback=multiStepFeedback
+        testPercentage = self.parameterAsDouble(
+            parameters,
+            self.TEST_PERCENTAGE,
+            context
         )
-        bufferLyr = output['OUTPUT']
-        multiStepFeedback.setCurrentStep(1)
-        spatialIdx, idDict = self.buildSpatialIndexAndIdDict(
-            bufferLyr,
-            feedback=multiStepFeedback
+        (train_sink, train_dest_id) = self.parameterAsSink(
+            parameters,
+            self.TRAIN_DATASET,
+            context,
+            source.fields(),
+            source.wkbType(),
+            source.sourceCrs()
+        )
+        (test_sink, test_dest_id) = self.parameterAsSink(
+            parameters,
+            self.TEST_DATASET,
+            context,
+            source.fields(),
+            source.wkbType(),
+            source.sourceCrs()
+        )
+        (val_sink, val_dest_id) = self.parameterAsSink(
+            parameters,
+            self.VALIDATION_DATASET,
+            context,
+            source.fields(),
+            source.wkbType(),
+            source.sourceCrs()
+        )
+        inputFeats = set(feat for feat in source.getFeatures())
+        #training data
+        train_size = math.ceil(len(inputFeats)*trainPercentage/100)
+        trainSet = set(random.sample(inputFeats, train_size))
+        #test data
+        test_size = math.ceil(len(inputFeats)*testPercentage/100)
+        complementSet = inputFeats.difference(trainSet)
+        testSet = set(random.sample(complementSet, test_size))
+        #validation data
+        valSet = complementSet.difference(testSet)
+
+        train_sink.addFeatures(
+            trainSet,
+            QgsFeatureSink.FastInsert
         )
 
-        multiStepFeedback.setCurrentStep(2)
-        progressStep = 100/bufferLyr.featureCount() \
-            if bufferLyr.featureCount() !=0 else 0
-        
-        visitedSet = set()
-        clusterSet = defaultdict(list)
+        test_sink.addFeatures(
+            testSet,
+            QgsFeatureSink.FastInsert
+        )
 
-        for current, feat in enumerate(featList):
-            if feedback.isCanceled():
-                break
-            if feat.id() in visitedSet:
-                feedback.setProgress(current*progressStep)
-                continue
-
-            feedback.setProgress(current*progressStep)
-        return {self.OUTPUT: list(outputLayers.values())}
-    
-    def build_cluster(feat, clusterSet, visitedSet, spatialIdx, idDict):
-        candidates = [featId for featId in spatialIdx.intersects(feat.geometry().boundingBox)]
-        if candidates == [feat.id()]:
-            visitedSet.add(feat.id())
-            return
-        else:
+        val_sink.addFeatures(
+            valSet,
+            QgsFeatureSink.FastInsert
+        )
+        return {
+            self.TRAIN_DATASET: train_dest_id,
+            self.TEST_DATASET: test_dest_id,
+            self.VALIDATION_DATASET: val_dest_id
+        }
 
 
     def name(self):
@@ -197,14 +204,14 @@ class CreateTrainTestSamplesAlgorithm(QgsProcessingAlgorithm):
         lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'createtraintestsamples'
+        return 'createtraintestvalidatesamples'
 
     def displayName(self):
         """
         Returns the translated algorithm name, which should be used for any
         user-visible display of the algorithm name.
         """
-        return self.tr('Create train test samples')
+        return self.tr('Create train test validate samples')
 
     def group(self):
         """
@@ -227,10 +234,10 @@ class CreateTrainTestSamplesAlgorithm(QgsProcessingAlgorithm):
         """
         Translates input string.
         """
-        return QCoreApplication.translate('CreateTrainTestSamplesAlgorithm', string)
+        return QCoreApplication.translate('CreateTrainTestValidateSamplesAlgorithm', string)
 
     def createInstance(self):
         """
         Creates an instance of this class
         """
-        return CreateTrainTestSamplesAlgorithm()
+        return CreateTrainTestValidateSamplesAlgorithm()
