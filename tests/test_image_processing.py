@@ -32,8 +32,10 @@ from DeepLearningTools.core.image_processing.image_utils import ImageUtils
 from .utilities import get_qgis_app
 
 
-
-QGIS_APP = get_qgis_app()
+try:
+    QGIS_APP = get_qgis_app()
+except:
+    pass
 
 class TestImageProcessing(unittest.TestCase):
 
