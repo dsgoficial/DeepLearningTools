@@ -29,10 +29,21 @@ gdal.UseExceptions()
 from qgis.core import (
     QgsRectangle, QgsFeatureRequest,
     QgsCoordinateTransformContext, QgsCoordinateReferenceSystem,
-    QgsRasterLayer, QgsSpatialIndex
+    QgsRasterLayer, QgsSpatialIndex, QgsFeature
 )
 
 class VectorUtils:
+
+    statDict = {
+        'n_edges' : None,
+        'main_angle' : None,
+        'angle_list' : None,
+        'hole_count' : None,
+        'area' : lambda x: x.geometry().area(),
+        'perimeter' : None,
+        'convex_hull_area_ratio' : lambda x: x.geometry().convexHull().area() / x.geometry().area(),
+        'flattening' : lambda x: x
+    }
 
     def buildSpatialIndexAndIdDict(self, inputLyr, feedback = None, featureRequest=None):
         """
@@ -89,3 +100,108 @@ class VectorUtils:
             feedback=feedback
         )
         return output['OUTPUT']
+    
+    def calculateStatistics(self, feat, statList, fields):
+        newFeat = self.createNewFeat(feat, fields)
+        for stat in statList:
+            newFeat[stat] = 
+        if 'area' in statList:
+            newFeat['area'] = feat.geometry().area()
+        if 'n_edges' in statList:
+
+        return newFeat
+
+    def createNewFeat(self, feat, fields):
+        newFeat = QgsFeature(fields)
+        for field in feat.fields():
+            if field in fields:
+                newFeat[field.name()] = feat[field.name()]
+        newFeat.setGeometry(feat.geometry())
+        return newFeat
+
+def find_feature_compactness(geom):
+    return (geom.length()/(3.54 * sqrt(geom.area()))) # 1 for a circle
+
+def find_feature_convexity(geom):
+    hull_area = 0
+    geom_area = 0
+    if geom.isMultipart():
+      new_features = []
+      temp_feature = QgsFeature()
+      for part in geom.asGeometryCollection():
+        temp_feature.setGeometry(part)
+        new_features.append(QgsFeature(temp_feature))
+      for subfeature in new_features:
+          hull_area += subfeature.geometry().convexHull().area()
+          geom_area += subfeature.geometry().area()
+      return (hull_area - geom_area)/hull_area
+    else:
+      hull_area = geom.convexHull().area()
+      return (hull_area - geom.area())/hull_area
+
+def find_feature_amplitude(geom):
+    hull_length = 0
+    geom_length = 0
+    if geom.isMultipart():
+      new_features = []
+      temp_feature = QgsFeature()
+      for part in geom.asGeometryCollection():
+        temp_feature.setGeometry(part)
+        new_features.append(QgsFeature(temp_feature))
+      for subfeature in new_features:
+          hull_length += subfeature.geometry().convexHull().length()
+          geom_length += subfeature.geometry().length()
+      return (geom_length - hull_length)/geom_length
+    else:
+      hull_length =  geom.convexHull().length()
+      geom_length =  geom.length()
+      return (geom_length - hull_length)/geom_length
+
+def find_feature_notches(geom, self):
+    if geom is None: return None
+    if geom.type() == QGis.Polygon:
+        notches = 0
+        if geom.isMultipart():
+          polygons = geom.asMultiPolygon()
+        else:
+          polygons = [ geom.asPolygon() ]
+        for polygon in polygons:
+          for ring in polygon:
+            triplet = []
+            ring.append(ring[1])
+            for i in ring:
+                triplet.append(i) 
+                if len(triplet) > 3:
+                    del triplet[0]
+                if len(triplet) == 3:
+                    zcp = find_convex(triplet)
+                    if zcp > 0: 
+                        notches +=1
+
+    return notches
+
+def find_feature_vertices(geom):
+    if geom is None: return None
+    if geom.type() == QGis.Polygon:
+        count = 0
+        if geom.isMultipart():
+          polygons = geom.asMultiPolygon()
+        else:
+          polygons = [ geom.asPolygon() ]
+        for polygon in polygons:
+          for ring in polygon:
+            count += len(ring)
+    count = count - 1.0
+    return count
+
+def find_feature_complexity(conv, ampl, freq):
+    return ((0.8 * ampl * freq) + (0.2 * conv))
+
+def find_convex(triplet):
+    a1,a2,a3 = triplet[0], triplet[1], triplet[2]
+    dx1 = a2[0] - a1[0]
+    dy1 = a2[1] - a1[1]
+    dx2 = a3[0] - a2[0]
+    dy2 = a3[1] - a2[1]
+    zcrossproduct = dx1*dy2 - dy1*dx2
+    return zcrossproduct
