@@ -39,15 +39,16 @@ from math import sqrt, log
 class VectorUtils:
 
     statDict = {
-        'n_edges' : None,
+        'n_vertexes' : lambda geom: find_feature_vertices(geom),
         'main_angle' : lambda geom: main_angle(geom),
-        'angle_list' : None,
         'hole_count' : None,
         'area' : lambda geom: geom.area(),
-        'perimeter' : None,
+        'perimeter' : lambda geom: geom.length(),
         'convex_hull_area_ratio' : lambda geom: (geom.convexHull().area() - geom.area()) / geom.convexHull().area() ,
         'compactness' : lambda geom: find_feature_compactness(geom),
-        'fractal_dimension' : lambda geom: fractal_dimension(geom)
+        'fractal_dimension' : lambda geom: fractal_dimension(geom),
+        'vibration_amplitude' : lambda geom: find_feature_amplitude(geom),
+        'vibration_frequency' : lambda geom: find_vibration_frequency(geom)
     }
 
     def buildSpatialIndexAndIdDict(self, inputLyr, feedback = None, featureRequest=None):
@@ -158,8 +159,8 @@ def find_feature_amplitude(geom):
       geom_length =  geom.length()
       return (geom_length - hull_length)/geom_length
 
-def find_feature_notches(geom, self):
-    if geom is None: return None
+def find_feature_notches(geom):
+    notches = None
     if geom.type() == QgsWkbTypes.Polygon:
         notches = 0
         if geom.isMultipart():
@@ -206,6 +207,13 @@ def find_convex(triplet):
     dy2 = a3[1] - a2[1]
     zcrossproduct = dx1*dy2 - dy1*dx2
     return zcrossproduct
+
+def find_vibration_frequency(geom):
+    feature_vertices = find_feature_vertices(geom)
+    feature_notches = find_feature_notches(geom)
+    feature_notches_normalized = float(feature_notches) / (feature_vertices - 3)
+    return (16*((feature_notches_normalized - 0.5)**4)) - (8*(feature_notches_normalized - 0.5)**2) + 1
+
 
 def fractal_dimension(geom):
     """Fractal dimension of a polygon

@@ -79,9 +79,8 @@ class FindPolygonStatisticsAlgorithm(QgsProcessingAlgorithm):
         """
 
         self.statistics = [
-            ('n_edges', self.tr('number of edges')),
+            ('n_vertexes', self.tr('number of vertexes')),
             ('main_angle', self.tr('main angle of the polygon')),
-            ('angle_list', self.tr('angle list')),
             ('hole_count', self.tr('number of holes')),
             ('area', self.tr('area')),
             ('perimeter', self.tr('perimeter')),
