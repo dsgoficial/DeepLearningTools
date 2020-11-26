@@ -40,7 +40,7 @@ class VectorUtils:
 
     statDict = {
         'n_edges' : None,
-        'main_angle' : None,
+        'main_angle' : lambda geom: main_angle(geom),
         'angle_list' : None,
         'hole_count' : None,
         'area' : lambda geom: geom.area(),
@@ -218,3 +218,8 @@ def fractal_dimension(geom):
         [type]: [description]
     """
     return 2*log(0.25*geom.length()) / log(geom.area())
+
+def main_angle(geom):
+    area, angle, width, height = 0.0, 0.0, 0.0, 0.0
+    orientedBB = geom.orientedMinimumBoundingBox(area, angle, width, height)
+    return angle
