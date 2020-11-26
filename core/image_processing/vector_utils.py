@@ -10,6 +10,9 @@
         begin                : 2020-04-108
         copyright            : (C) 2020 by Philipe Borba
         email                : philipeborba@gmail.com
+        Compactness, complexity, deviation from the convex hull, amplitude of 
+        vibration, frequency of the vibration andt he number of vertexes
+        taken from https://github.com/pondrejk/PolygonComplexity
  ***************************************************************************/
 
 /***************************************************************************
@@ -29,8 +32,9 @@ gdal.UseExceptions()
 from qgis.core import (
     QgsRectangle, QgsFeatureRequest,
     QgsCoordinateTransformContext, QgsCoordinateReferenceSystem,
-    QgsRasterLayer, QgsSpatialIndex, QgsFeature
+    QgsRasterLayer, QgsSpatialIndex, QgsFeature, QgsWkbTypes
 )
+from math import sqrt, log
 
 class VectorUtils:
 
@@ -39,10 +43,11 @@ class VectorUtils:
         'main_angle' : None,
         'angle_list' : None,
         'hole_count' : None,
-        'area' : lambda x: x.geometry().area(),
+        'area' : lambda geom: geom.area(),
         'perimeter' : None,
-        'convex_hull_area_ratio' : lambda x: x.geometry().convexHull().area() / x.geometry().area(),
-        'flattening' : lambda x: x
+        'convex_hull_area_ratio' : lambda geom: (geom.convexHull().area() - geom.area()) / geom.convexHull().area() ,
+        'compactness' : lambda geom: find_feature_compactness(geom),
+        'fractal_dimension' : lambda geom: fractal_dimension(geom)
     }
 
     def buildSpatialIndexAndIdDict(self, inputLyr, feedback = None, featureRequest=None):
@@ -104,11 +109,7 @@ class VectorUtils:
     def calculateStatistics(self, feat, statList, fields):
         newFeat = self.createNewFeat(feat, fields)
         for stat in statList:
-            newFeat[stat] = 
-        if 'area' in statList:
-            newFeat['area'] = feat.geometry().area()
-        if 'n_edges' in statList:
-
+            newFeat[stat] = self.statDict[stat](newFeat.geometry())
         return newFeat
 
     def createNewFeat(self, feat, fields):
@@ -159,7 +160,7 @@ def find_feature_amplitude(geom):
 
 def find_feature_notches(geom, self):
     if geom is None: return None
-    if geom.type() == QGis.Polygon:
+    if geom.type() == QgsWkbTypes.Polygon:
         notches = 0
         if geom.isMultipart():
           polygons = geom.asMultiPolygon()
@@ -182,7 +183,7 @@ def find_feature_notches(geom, self):
 
 def find_feature_vertices(geom):
     if geom is None: return None
-    if geom.type() == QGis.Polygon:
+    if geom.type() == QgsWkbTypes.Polygon:
         count = 0
         if geom.isMultipart():
           polygons = geom.asMultiPolygon()
@@ -205,3 +206,15 @@ def find_convex(triplet):
     dy2 = a3[1] - a2[1]
     zcrossproduct = dx1*dy2 - dy1*dx2
     return zcrossproduct
+
+def fractal_dimension(geom):
+    """Fractal dimension of a polygon
+    http://www.umass.edu/landeco/research/fragstats/documents/Metrics/Shape%20Metrics/Metrics/P9%20-%20FRAC.htm
+
+    Args:
+        geom ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
+    return 2*log(0.25*geom.length()) / log(geom.area())

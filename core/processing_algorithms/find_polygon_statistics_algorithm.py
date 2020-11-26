@@ -86,7 +86,9 @@ class FindPolygonStatisticsAlgorithm(QgsProcessingAlgorithm):
             ('area', self.tr('area')),
             ('perimeter', self.tr('perimeter')),
             ('convex_hull_area_ratio', self.tr('convex hull to polygon area ratio')),
-            ('flattening', self.tr('flattening'))
+            ('flattening', self.tr('flattening')),
+            ('compactness', self.tr('compactness of the polygon')),
+            ('fractal_dimention', self.tr('fractal dimension of the polygon'))
         ]
 
         # We add the input vector features source. It can have any kind of
@@ -168,7 +170,13 @@ class FindPolygonStatisticsAlgorithm(QgsProcessingAlgorithm):
             context
         )
 
-        statList = self.parameterAsEnums(parameters, self.SUMMARIES, context)
+        statList = [ 
+            self.statistics[idx][0] for idx in self.parameterAsEnums(
+                parameters,
+                self.STATS,
+                context
+            )
+        ]
 
         featCount = inputLyr.featureCount() if not onlySelected \
             else inputLyr.selectedFeatureCount()
