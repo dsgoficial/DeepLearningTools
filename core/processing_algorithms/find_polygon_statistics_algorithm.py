@@ -84,10 +84,13 @@ class FindPolygonStatisticsAlgorithm(QgsProcessingAlgorithm):
             ('hole_count', self.tr('number of holes')),
             ('area', self.tr('area')),
             ('perimeter', self.tr('perimeter')),
-            ('convex_hull_area_ratio', self.tr('convex hull to polygon area ratio')),
             ('flattening', self.tr('flattening')),
             ('compactness', self.tr('compactness of the polygon')),
-            ('fractal_dimention', self.tr('fractal dimension of the polygon'))
+            ('fractal_dimention', self.tr('fractal dimension of the polygon')),
+            ('vibration_amplitude', self.tr('vibration amplitude of the polygon')),
+            ('vibration_frequency', self.tr('vibration frequency of the polygon')),
+            ('geometry_complexity', self.tr('gemetry complexity of the polygon')),
+            ('convexity', self.tr('convexity of the polygon'))
         ]
 
         # We add the input vector features source. It can have any kind of
@@ -169,12 +172,16 @@ class FindPolygonStatisticsAlgorithm(QgsProcessingAlgorithm):
             context
         )
 
-        statList = [ 
-            self.statistics[idx][0] for idx in self.parameterAsEnums(
+        indexList = self.parameterAsEnums(
                 parameters,
                 self.STATS,
                 context
             )
+
+        statList = [ 
+            self.statistics[idx][0] for idx in indexList
+        ] if indexList != [] else [
+            i[0] for i in self.statistics
         ]
 
         featCount = inputLyr.featureCount() if not onlySelected \

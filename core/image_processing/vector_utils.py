@@ -41,14 +41,15 @@ class VectorUtils:
     statDict = {
         'n_vertexes' : lambda geom: find_feature_vertices(geom),
         'main_angle' : lambda geom: main_angle(geom),
-        'hole_count' : None,
+        'hole_count' : lambda geom: hole_count(geom),
         'area' : lambda geom: geom.area(),
         'perimeter' : lambda geom: geom.length(),
-        'convex_hull_area_ratio' : lambda geom: (geom.convexHull().area() - geom.area()) / geom.convexHull().area() ,
         'compactness' : lambda geom: find_feature_compactness(geom),
         'fractal_dimension' : lambda geom: fractal_dimension(geom),
         'vibration_amplitude' : lambda geom: find_feature_amplitude(geom),
-        'vibration_frequency' : lambda geom: find_vibration_frequency(geom)
+        'vibration_frequency' : lambda geom: find_vibration_frequency(geom),
+        'geometry_complexity' : lambda geom: find_feature_complexity(geom),
+        'convexity' : lambda geom: find_feature_convexity(geom)
     }
 
     def buildSpatialIndexAndIdDict(self, inputLyr, feedback = None, featureRequest=None):
@@ -231,3 +232,17 @@ def main_angle(geom):
     area, angle, width, height = 0.0, 0.0, 0.0, 0.0
     orientedBB = geom.orientedMinimumBoundingBox(area, angle, width, height)
     return angle
+
+def hole_count(geom):
+    return len(getHoles(geom))
+
+def getHoles(geom):
+    donutholes = []
+    for part in geom.asGeometryCollection():
+        for current, item in enumerate(part.asPolygon()):
+            newGeom = QgsGeometry.fromPolygonXY([item])
+            if current == 0:
+                continue
+            else:
+                donutholes.append(newGeom)
+    return donutholes
