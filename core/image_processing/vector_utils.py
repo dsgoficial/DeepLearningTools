@@ -216,7 +216,7 @@ def find_convex(triplet):
 def find_vibration_frequency(geom):
     feature_vertices = find_feature_vertices(geom)
     feature_notches = find_feature_notches(geom)
-    feature_notches_normalized = float(feature_notches) / float(feature_vertices - 3) if feature_vertices != 3 else feature_notches
+    feature_notches_normalized = float(feature_notches) / float(feature_vertices - 3) if feature_vertices != 3 else 0
     return 16*(feature_notches_normalized - 0.5)**4 - 8*(feature_notches_normalized - 0.5)**2 - 1
 
 
