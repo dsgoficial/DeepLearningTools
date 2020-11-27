@@ -69,8 +69,6 @@ class FindPolygonStatisticsAlgorithm(QgsProcessingAlgorithm):
     SELECTED = 'SELECTED'
     OUTPUT = 'OUTPUT'
     STATS = 'STATS'
-    NUM_CPU = 'NUM_CPU'
-    NUM_FEATS = 'NUM_FEATS'
 
     def initAlgorithm(self, config):
         """
@@ -84,9 +82,8 @@ class FindPolygonStatisticsAlgorithm(QgsProcessingAlgorithm):
             ('hole_count', self.tr('number of holes')),
             ('area', self.tr('area')),
             ('perimeter', self.tr('perimeter')),
-            ('flattening', self.tr('flattening')),
             ('compactness', self.tr('compactness of the polygon')),
-            ('fractal_dimention', self.tr('fractal dimension of the polygon')),
+            ('fractal_dimension', self.tr('fractal dimension of the polygon')),
             ('vibration_amplitude', self.tr('vibration amplitude of the polygon')),
             ('vibration_frequency', self.tr('vibration frequency of the polygon')),
             ('geometry_complexity', self.tr('gemetry complexity of the polygon')),
@@ -113,28 +110,10 @@ class FindPolygonStatisticsAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterEnum(
                 self.STATS,
-                self.tr('Statistics to calculate (leave empty to use all available)'),
+                self.tr('Statistics to calculate'),
                 options=[p[1] for p in self.statistics],
                 allowMultiple=True,
-                optional=False))
-
-        self.addParameter(
-            QgsProcessingParameterNumber(
-                self.NUM_CPU,
-                self.tr('Number of CPUs used in processing'),
-                QgsProcessingParameterNumber.Integer,
-                defaultValue=1,
-                minValue=1,
-                maxValue=os.cpu_count()
-            )
-        )
-        self.addParameter(
-            QgsProcessingParameterNumber(
-                self.NUM_FEATS,
-                self.tr('Number of features fetched per thread'),
-                QgsProcessingParameterNumber.Integer,
-                defaultValue=10000,
-                minValue=1
+                optional=False
             )
         )
 
@@ -190,7 +169,7 @@ class FindPolygonStatisticsAlgorithm(QgsProcessingAlgorithm):
             else inputLyr.getSelectedFeatures()
         # Compute the number of steps to display within the progress bar and
         # get features from source
-        self.total = 100.0 / featCount if featCount else 0
+        progress_step = 100.0 / featCount if featCount else 0
 
         fields = inputLyr.fields()
         for stat in statList:
@@ -209,20 +188,11 @@ class FindPolygonStatisticsAlgorithm(QgsProcessingAlgorithm):
 
         vector_utils = VectorUtils()
 
-        num_workers = self.parameterAsInt(
-            parameters,
-            self.NUM_CPU,
-            context
-        )
-        num_feats_per_worker = self.parameterAsInt(
-            parameters,
-            self.NUM_FEATS,
-            context
-        )
-        def compute(feature):
-
+        for current_feat, feat in enumerate(features):
+            if feedback is not None and feedback.isCanceled():
+                break
             newFeat = vector_utils.calculateStatistics(
-                feature,
+                feat,
                 statList,
                 fields
             )
@@ -230,37 +200,12 @@ class FindPolygonStatisticsAlgorithm(QgsProcessingAlgorithm):
                 newFeat,
                 QgsFeatureSink.FastInsert
             )
-            self.current_feat += 1
+            # self.current_feat += 1
             if feedback is not None:
                 feedback.setProgress(
-                    int(self.current_feat * self.total)
+                    current_feat * progress_step
                 )
-            return
-
-        self.current_feat = 0
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = {
-                executor.submit(compute, task): task
-                for task in itertools.islice(features, num_feats_per_worker)
-            }
-            while futures:
-                if feedback is not None and feedback.isCanceled():
-                    break
-                # Wait for the next future to complete.
-                done, futures = concurrent.futures.wait(
-                    futures, return_when=concurrent.futures.FIRST_COMPLETED
-                )
-
-                # Schedule the next set of futures.  We don't want more than N futures
-                # in the pool at a time, to keep memory consumption down.
-                for task in itertools.islice(features, len(done)):
-                    futures.add(
-                        executor.submit(compute, task)
-                    )
-            done, futures = concurrent.futures.wait(
-                    futures, return_when=concurrent.futures.ALL_COMPLETED
-                )
-            return {self.OUTPUT : dest_id}
+        return {self.OUTPUT : dest_id}
     
     def name(self):
         """

@@ -32,7 +32,7 @@ gdal.UseExceptions()
 from qgis.core import (
     QgsRectangle, QgsFeatureRequest,
     QgsCoordinateTransformContext, QgsCoordinateReferenceSystem,
-    QgsRasterLayer, QgsSpatialIndex, QgsFeature, QgsWkbTypes
+    QgsRasterLayer, QgsSpatialIndex, QgsFeature, QgsWkbTypes, QgsGeometry
 )
 from math import sqrt, log
 
@@ -161,8 +161,8 @@ def find_feature_amplitude(geom):
       return (geom_length - hull_length)/geom_length
 
 def find_feature_notches(geom):
-    notches = None
-    if geom.type() == QgsWkbTypes.Polygon:
+    notches = 0
+    if geom.type() == QgsWkbTypes.PolygonGeometry:
         notches = 0
         if geom.isMultipart():
           polygons = geom.asMultiPolygon()
@@ -184,8 +184,9 @@ def find_feature_notches(geom):
     return notches
 
 def find_feature_vertices(geom):
-    if geom is None: return None
-    if geom.type() == QgsWkbTypes.Polygon:
+    if geom is None:
+        return None
+    if geom.type() == QgsWkbTypes.PolygonGeometry:
         count = 0
         if geom.isMultipart():
           polygons = geom.asMultiPolygon()
@@ -197,7 +198,10 @@ def find_feature_vertices(geom):
     count = count - 1.0
     return count
 
-def find_feature_complexity(conv, ampl, freq):
+def find_feature_complexity(geom):
+    conv = find_feature_convexity(geom)
+    ampl = find_feature_amplitude(geom)
+    freq = find_vibration_frequency(geom)
     return ((0.8 * ampl * freq) + (0.2 * conv))
 
 def find_convex(triplet):
@@ -212,8 +216,8 @@ def find_convex(triplet):
 def find_vibration_frequency(geom):
     feature_vertices = find_feature_vertices(geom)
     feature_notches = find_feature_notches(geom)
-    feature_notches_normalized = float(feature_notches) / (feature_vertices - 3)
-    return (16*((feature_notches_normalized - 0.5)**4)) - (8*(feature_notches_normalized - 0.5)**2) + 1
+    feature_notches_normalized = float(feature_notches) / float(feature_vertices - 3) if feature_vertices != 3 else feature_notches
+    return 16*(feature_notches_normalized - 0.5)**4 - 8*(feature_notches_normalized - 0.5)**2 - 1
 
 
 def fractal_dimension(geom):
@@ -230,7 +234,7 @@ def fractal_dimension(geom):
 
 def main_angle(geom):
     area, angle, width, height = 0.0, 0.0, 0.0, 0.0
-    orientedBB = geom.orientedMinimumBoundingBox(area, angle, width, height)
+    orientedBB, area, angle, width, height = geom.orientedMinimumBoundingBox()
     return angle
 
 def hole_count(geom):
