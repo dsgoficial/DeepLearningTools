@@ -202,7 +202,7 @@ def find_feature_complexity(geom):
     conv = find_feature_convexity(geom)
     ampl = find_feature_amplitude(geom)
     freq = find_vibration_frequency(geom)
-    return ((0.8 * ampl * freq) + (0.2 * conv))
+    return ((0.8 * ampl * freq) * (0.2 * conv))
 
 def find_convex(triplet):
     a1,a2,a3 = triplet[0], triplet[1], triplet[2]
