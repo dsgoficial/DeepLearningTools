@@ -11,7 +11,7 @@
         copyright            : (C) 2020 by Philipe Borba
         email                : philipeborba@gmail.com
         Compactness, complexity, deviation from the convex hull, amplitude of 
-        vibration, frequency of the vibration andt he number of vertexes
+        vibration, frequency of the vibration and the number of vertexes
         taken from https://github.com/pondrejk/PolygonComplexity
  ***************************************************************************/
 
@@ -231,6 +231,21 @@ def fractal_dimension(geom):
         [type]: [description]
     """
     return 2*log(0.25*geom.length()) / log(geom.area())
+
+def fractality(geom):
+    """Fractality of a polygon
+
+    Args:
+        geom ([type]): [description]
+    """
+    return 1-log(geom.area())/(2*log(geom.length()))
+
+def rectangularity(geom):
+    orientedBB, area, angle, width, height = geom.orientedMinimumBoundingBox()
+    return geom.area() / area
+
+def squareness(geom):
+    return None
 
 def main_angle(geom):
     area, angle, width, height = 0.0, 0.0, 0.0, 0.0
