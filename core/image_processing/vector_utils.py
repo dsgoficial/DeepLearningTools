@@ -111,7 +111,7 @@ class VectorUtils:
     def calculateStatistics(self, feat, statList, fields):
         newFeat = self.createNewFeat(feat, fields)
         for stat in statList:
-            newFeat[stat] = self.statDict[stat](newFeat.geometry())
+            newFeat[stat] = abs(self.statDict[stat](newFeat.geometry()))
         return newFeat
 
     def createNewFeat(self, feat, fields):
