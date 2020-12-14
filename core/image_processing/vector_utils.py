@@ -179,22 +179,18 @@ def find_feature_notches(geom):
     notches = 0
     if geom.type() == QgsWkbTypes.PolygonGeometry:
         notches = 0
-        if geom.isMultipart():
-          polygons = geom.asMultiPolygon()
-        else:
-          polygons = [ geom.asPolygon() ]
-        for polygon in polygons:
-          for ring in polygon:
-            triplet = []
-            ring.append(ring[1])
-            for i in ring:
-                triplet.append(i) 
-                if len(triplet) > 3:
-                    del triplet[0]
-                if len(triplet) == 3:
-                    zcp = find_convex(triplet)
-                    if zcp > 0: 
-                        notches +=1
+        for polygon in geom.asGeometryCollection():
+            for ring in polygon.asPolygon():
+                triplet = []
+                ring.append(ring[0])
+                for i in ring:
+                    triplet.append(i) 
+                    if len(triplet) > 3:
+                        del triplet[0]
+                    if len(triplet) == 3:
+                        zcp = find_convex(triplet)
+                        if zcp < 0: 
+                            notches +=1
 
     return notches
 
