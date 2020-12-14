@@ -182,14 +182,14 @@ def find_feature_notches(geom):
         for polygon in geom.asGeometryCollection():
             for ring in polygon.asPolygon():
                 triplet = []
-                ring.append(ring[0])
+                ring.append(ring[1])
                 for i in ring:
                     triplet.append(i) 
                     if len(triplet) > 3:
                         del triplet[0]
                     if len(triplet) == 3:
                         zcp = find_convex(triplet)
-                        if zcp < 0: 
+                        if zcp > 0: 
                             notches +=1
 
     return notches
