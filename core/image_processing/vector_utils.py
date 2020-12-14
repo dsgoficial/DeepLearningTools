@@ -286,4 +286,4 @@ def find_equivalent_rectangular_index(geom):
     return (orientedBB.length() / geom.length()) * sqrt(geom.area()/area)
 
 def find_circularity(geom):
-    return 4*pi*geom.area() / (geom.length)**2
+    return 4*pi*geom.area() / (geom.length())**2
