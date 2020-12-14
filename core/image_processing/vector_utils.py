@@ -34,7 +34,7 @@ from qgis.core import (
     QgsCoordinateTransformContext, QgsCoordinateReferenceSystem,
     QgsRasterLayer, QgsSpatialIndex, QgsFeature, QgsWkbTypes, QgsGeometry
 )
-from math import sqrt, log
+from math import sqrt, log, pi
 
 class VectorUtils:
 
@@ -46,10 +46,15 @@ class VectorUtils:
         'perimeter' : lambda geom: geom.length(),
         'compactness' : lambda geom: find_feature_compactness(geom),
         'fractal_dimension' : lambda geom: fractal_dimension(geom),
+        'fractality' : lambda geom: fractality(geom),
         'vibration_amplitude' : lambda geom: find_feature_amplitude(geom),
         'vibration_frequency' : lambda geom: find_vibration_frequency(geom),
         'geometry_complexity' : lambda geom: find_feature_complexity(geom),
-        'convexity' : lambda geom: find_feature_convexity(geom)
+        'find_feature_shape_complexity_index' : lambda geom: find_feature_shape_complexity_index(geom),
+        'equivaent_rectangular_index' : lambda geom: find_equivalent_rectangular_index(geom),
+        'circularity' : lambda geom: find_circularity(geom),
+        'squareness' : lambda geom: find_squareness(geom),
+        'rectangularity' : lambda geom: find_rectangularity(geom)
     }
 
     def buildSpatialIndexAndIdDict(self, inputLyr, feedback = None, featureRequest=None):
@@ -125,7 +130,17 @@ class VectorUtils:
 def find_feature_compactness(geom):
     return (geom.length()/(3.54 * sqrt(geom.area()))) # 1 for a circle
 
-def find_feature_convexity(geom):
+def find_feature_shape_complexity_index(geom):
+    """https://jblindsay.github.io/wbt_book/available_tools/gis_analysis_patch_shape_tools.html#ShapeComplexityIndex
+
+    SCI = 1 - A/Ah
+
+    Args:
+        geom ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
     hull_area = 0
     geom_area = 0
     if geom.isMultipart():
@@ -137,10 +152,10 @@ def find_feature_convexity(geom):
       for subfeature in new_features:
           hull_area += subfeature.geometry().convexHull().area()
           geom_area += subfeature.geometry().area()
-      return (hull_area - geom_area)/hull_area
+      return 1.0 - geom_area/hull_area
     else:
       hull_area = geom.convexHull().area()
-      return (hull_area - geom.area())/hull_area
+      return 1.0 - geom.area()/hull_area
 
 def find_feature_amplitude(geom):
     hull_length = 0
@@ -154,11 +169,11 @@ def find_feature_amplitude(geom):
       for subfeature in new_features:
           hull_length += subfeature.geometry().convexHull().length()
           geom_length += subfeature.geometry().length()
-      return (geom_length - hull_length)/geom_length
+      return 1.0 - hull_length/geom_length
     else:
       hull_length =  geom.convexHull().length()
       geom_length =  geom.length()
-      return (geom_length - hull_length)/geom_length
+      return 1.0 - hull_length/geom_length
 
 def find_feature_notches(geom):
     notches = 0
@@ -199,7 +214,7 @@ def find_feature_vertices(geom):
     return count
 
 def find_feature_complexity(geom):
-    conv = find_feature_convexity(geom)
+    conv = find_feature_shape_complexity_index(geom)
     ampl = find_feature_amplitude(geom)
     freq = find_vibration_frequency(geom)
     return ((0.8 * ampl * freq) * (0.2 * conv))
@@ -217,7 +232,7 @@ def find_vibration_frequency(geom):
     feature_vertices = find_feature_vertices(geom)
     feature_notches = find_feature_notches(geom)
     feature_notches_normalized = float(feature_notches) / float(feature_vertices - 3) if feature_vertices != 3 else 0
-    return 16*(feature_notches_normalized - 0.5)**4 - 8*(feature_notches_normalized - 0.5)**2 - 1
+    return 16.0*(feature_notches_normalized - 0.5)**4 - 8*(feature_notches_normalized - 0.5)**2 - 1.0
 
 
 def fractal_dimension(geom):
@@ -240,12 +255,12 @@ def fractality(geom):
     """
     return 1-log(geom.area())/(2*log(geom.length()))
 
-def rectangularity(geom):
+def find_rectangularity(geom):
     orientedBB, area, angle, width, height = geom.orientedMinimumBoundingBox()
     return geom.area() / area
 
-def squareness(geom):
-    return None
+def find_squareness(geom):
+    return 4*sqrt(geom.area()) / geom.length()
 
 def main_angle(geom):
     area, angle, width, height = 0.0, 0.0, 0.0, 0.0
@@ -265,3 +280,10 @@ def getHoles(geom):
             else:
                 donutholes.append(newGeom)
     return donutholes
+
+def find_equivalent_rectangular_index(geom):
+    orientedBB, area, angle, width, height = geom.orientedMinimumBoundingBox()
+    return (orientedBB.length() / geom.length()) * sqrt(geom.area()/area)
+
+def find_circularity(geom):
+    return 4*pi*geom.area() / (geom.length)**2

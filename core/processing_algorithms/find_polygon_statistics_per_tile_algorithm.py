@@ -48,7 +48,7 @@ from DeepLearningTools.core.image_processing.vector_utils import VectorUtils
 import concurrent.futures
 
 
-class FindPolygonStatisticsAlgorithm(QgsProcessingAlgorithm):
+class FindPolygonStatisticsPerTileAlgorithm(QgsProcessingAlgorithm):
     """
     This is an example algorithm that takes a vector layer and
     creates a new identical one.
@@ -69,6 +69,7 @@ class FindPolygonStatisticsAlgorithm(QgsProcessingAlgorithm):
     SELECTED = 'SELECTED'
     OUTPUT = 'OUTPUT'
     STATS = 'STATS'
+    
 
     def initAlgorithm(self, config):
         """
@@ -84,15 +85,10 @@ class FindPolygonStatisticsAlgorithm(QgsProcessingAlgorithm):
             ('perimeter', self.tr('perimeter')),
             ('compactness', self.tr('compactness of the polygon')),
             ('fractal_dimension', self.tr('fractal dimension of the polygon')),
-            ('fractality', self.tr('fractality of the polygon'))
             ('vibration_amplitude', self.tr('vibration amplitude of the polygon')),
             ('vibration_frequency', self.tr('vibration frequency of the polygon')),
             ('geometry_complexity', self.tr('gemetry complexity of the polygon')),
-            ('find_feature_shape_complexity_index', self.tr('shape_complexity_index of the polygon')),
-            ('equivaent_rectangular_index', self.tr('equivalent rectangular index of the polygon')),
-            ('squareness', self.tr('squareness of the polygon')),
-            ('circularity', self.tr('find the circularity of the polygon')),
-            ('rectangularity', self.tr('find the rectangularity of the polygon'))
+            ('convexity', self.tr('convexity of the polygon'))
         ]
 
         # We add the input vector features source. It can have any kind of
