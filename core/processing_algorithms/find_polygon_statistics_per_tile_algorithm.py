@@ -216,7 +216,7 @@ class FindPolygonStatisticsPerTileAlgorithm(QgsProcessingAlgorithm):
         lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'Find polygon statistics'
+        return 'Find polygon statistics per tile'
 
     def displayName(self):
         """
@@ -246,4 +246,4 @@ class FindPolygonStatisticsPerTileAlgorithm(QgsProcessingAlgorithm):
         return QCoreApplication.translate('Processing', string)
 
     def createInstance(self):
-        return FindPolygonStatisticsAlgorithm()
+        return FindPolygonStatisticsPerTileAlgorithm()
