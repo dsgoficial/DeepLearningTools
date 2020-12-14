@@ -84,7 +84,7 @@ class FindPolygonStatisticsAlgorithm(QgsProcessingAlgorithm):
             ('perimeter', self.tr('perimeter')),
             ('compactness', self.tr('compactness of the polygon')),
             ('fractal_dimension', self.tr('fractal dimension of the polygon')),
-            ('fractality', self.tr('fractality of the polygon'))
+            ('fractality', self.tr('fractality of the polygon')),
             ('vibration_amplitude', self.tr('vibration amplitude of the polygon')),
             ('vibration_frequency', self.tr('vibration frequency of the polygon')),
             ('geometry_complexity', self.tr('gemetry complexity of the polygon')),
