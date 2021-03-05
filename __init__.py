@@ -26,6 +26,8 @@ __author__ = 'Philipe Borba'
 __date__ = '2020-03-12'
 __copyright__ = '(C) 2020 by Philipe Borba'
 
+from .deep_learning_tools import DeepLearningTools
+deepLearningTools = None
 
 # noinspection PyPep8Naming
 def classFactory(iface):  # pylint: disable=invalid-name
@@ -35,5 +37,6 @@ def classFactory(iface):  # pylint: disable=invalid-name
     :type iface: QgsInterface
     """
     #
-    from .deep_learning_tools import DeepLearningTools
-    return DeepLearningTools(iface)
+    global deepLearningTools
+    deepLearningTools = DeepLearningTools(iface)
+    return deepLearningTools

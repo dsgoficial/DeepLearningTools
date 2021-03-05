@@ -37,7 +37,7 @@ import processing
 
 # from .inspectFeatures_ui import Ui_Form
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
-    os.path.dirname(__file__), 'viewer_toolbar.ui'))
+    os.path.dirname(__file__), 'viewer_toolbar.ui'), resource_suffix='')
 
 class ViewerToolbar(QWidget,FORM_CLASS):
     def __init__(self, iface, parent=None):
