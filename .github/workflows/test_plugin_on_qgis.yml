@@ -20,8 +20,4 @@ jobs:
       - name: Caches the docker container
         uses: satackey/action-docker-layer-caching@v0.0.11
         continue-on-error: true
-    compose_file: docker-compose.yml
-      - name: Launching docker-compose
-        run: ./start.sh
-      - name: Running tests
-        run: ./exec.sh
+        run: ./start.sh && ./exec.sh
