@@ -2,9 +2,9 @@ name: unittests
 
 on:
   push:
-
+    branches: [main]
   pull_request:
-
+    branches: [main, dev]
 
 jobs:
   test-desktop:
