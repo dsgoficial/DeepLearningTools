@@ -6,7 +6,7 @@ services:
     container_name: deeplearningtools-testing-env
     volumes:
       # - /tmp/.X11-unix:/tmp/.X11-unix
-      - ../DeepLearningTools:/tests_directory
+      - ../DeepLearningTools:/tests_directory/DeepLearningTools
       - ..:/github_repo
     environment:
       # - DISPLAY=unix$DISPLAY

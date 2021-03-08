@@ -17,9 +17,6 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - name: Caches the docker container
-        uses: satackey/action-docker-layer-caching@v0.0.11
-        continue-on-error: true
       - name: Start the environment
         run: ./start.sh
       - name: Tests
