@@ -20,5 +20,9 @@ jobs:
       - name: Caches the docker container
         uses: satackey/action-docker-layer-caching@v0.0.11
         continue-on-error: true
-      - name: Run tests
-        run: ./start.sh && ./exec.sh
+      - name: Start the environment
+        run: ./start.sh
+      - name: Tests
+        run: ./exec.sh
+      - name: Stop the environment
+        run: docker-compose down 
