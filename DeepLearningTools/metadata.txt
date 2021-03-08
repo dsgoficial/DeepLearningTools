@@ -4,9 +4,9 @@
 
 [general]
 name=DeepLearningTools
-qgisMinimumVersion=3.0
+qgisMinimumVersion=3.14
 description=QGIS plugin to aid training Deep Learning Models
-version=0.1
+version=0.2.0
 author=Philipe Borba
 email=philipeborba@gmail.com
 
@@ -20,7 +20,7 @@ repository=https://github.com/phborba/DeepLearningTools
 
 hasProcessingProvider=yes
 # Uncomment the following line and add your changelog:
-# changelog=
+changelog=changelog
 
 # Tags are comma separated with spaces allowed
 tags=python, deep learning
@@ -39,8 +39,8 @@ deprecated=False
 # Check the documentation for more information.
 # plugin_dependencies=
 
-Category of the plugin: Raster, Vector, Database or Web
-# category=
+#Category of the plugin: Raster, Vector, Database or Web
+#category=Raster
 
 # If the plugin can run on QGIS Server.
 server=False

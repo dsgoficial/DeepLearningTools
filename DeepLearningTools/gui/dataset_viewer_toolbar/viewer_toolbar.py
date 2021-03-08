@@ -36,10 +36,11 @@ from qgis.gui import QgsMessageBar
 import processing
 
 # from .inspectFeatures_ui import Ui_Form
-FORM_CLASS, _ = uic.loadUiType(os.path.join(
-    os.path.dirname(__file__), 'viewer_toolbar.ui'), resource_suffix='')
+from .viewer_toolbar_ui import Ui_ViewerToolbar
+# FORM_CLASS, _ = uic.loadUiType(os.path.join(
+#     os.path.dirname(__file__), 'viewer_toolbar.ui'), resource_suffix='')
 
-class ViewerToolbar(QWidget,FORM_CLASS):
+class ViewerToolbar(QWidget, Ui_ViewerToolbar):
     def __init__(self, iface, parent=None):
         """
         Constructor

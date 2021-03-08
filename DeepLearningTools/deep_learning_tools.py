@@ -41,7 +41,12 @@ from qgis.PyQt.QtWidgets import QToolButton, QMenu, QAction
 from .deep_learning_tools_provider import DeepLearningToolsProvider
 from DeepLearningTools.gui.dataset_viewer_toolbar.viewer_toolbar import \
     ViewerToolbar
+
 from . import resources
+from . import resources_rc
+
+current_path = os.path.dirname(__file__)
+sys.path.append(os.path.abspath(current_path))
 
 cmd_folder = os.path.split(inspect.getfile(inspect.currentframe()))[0]
 
