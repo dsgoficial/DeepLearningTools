@@ -111,15 +111,15 @@ class ImageUtils:
             )
             return new_feat
         temp_lyr.StartTransaction()
-        # for feat in input_lyr.getFeatures(request):
-        #     new_feat = populate_temp_lyr(feat)
-        #     temp_lyr.CreateFeature(new_feat)
-        #     new_feat = None
-        list(
-            map(temp_lyr.CreateFeature,
-                map(populate_temp_lyr, input_lyr.getFeatures(request))
-            )
-        )
+        for feat in input_lyr.getFeatures(request):
+            new_feat = populate_temp_lyr(feat)
+            temp_lyr.CreateFeature(new_feat)
+            new_feat = None
+        # list(
+        #     map(temp_lyr.CreateFeature,
+        #         map(populate_temp_lyr, input_lyr.getFeatures(request))
+        #     )
+        # )
         temp_lyr.CommitTransaction()
         return temp_lyr, temp, driver, temp_ds
 

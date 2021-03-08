@@ -103,4 +103,3 @@ class Ui_ViewerToolbar(object):
         self.sideBySidePushButton.setToolTip(_translate("ViewerToolbar", "Activate Side By Side View"))
 
 from qgis import gui
-import resources_rc
