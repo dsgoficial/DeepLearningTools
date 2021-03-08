@@ -36,7 +36,7 @@ from qgis.gui import QgsMessageBar
 import processing
 
 # from .inspectFeatures_ui import Ui_Form
-from .viewer_toolbar import Ui_ViewerToolbar
+from .viewer_toolbar_ui import Ui_ViewerToolbar
 # FORM_CLASS, _ = uic.loadUiType(os.path.join(
 #     os.path.dirname(__file__), 'viewer_toolbar.ui'), resource_suffix='')
 
