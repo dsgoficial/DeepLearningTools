@@ -20,7 +20,7 @@ repository=https://github.com/phborba/DeepLearningTools
 
 hasProcessingProvider=yes
 # Uncomment the following line and add your changelog:
-changelog=changelog
+# changelog=changelog
 
 # Tags are comma separated with spaces allowed
 tags=python, deep learning
