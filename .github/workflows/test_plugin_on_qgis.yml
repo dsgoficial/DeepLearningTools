@@ -20,7 +20,7 @@ jobs:
       - name: Pull docker images
         run: docker-compose pull
       - uses: satackey/action-docker-layer-caching@v0.0.11
-        continue_on_error: true
+        continue-on-error: true
       - name: Start the environment
         run: ./start.sh
       - name: Tests
