@@ -21,10 +21,9 @@
  *                                                                         *
  ***************************************************************************/
 """
-import math
 import os
-import random
-from collections import defaultdict
+import requests
+import json
 
 import processing
 from qgis.core import (
@@ -34,6 +33,8 @@ from qgis.core import (
     QgsProcessingParameterNumber,
     QgsProcessingParameterString,
     QgsWkbTypes,
+    QgsJsonUtils,
+    QgsFeatureSink,
 )
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.utils import iface
@@ -97,9 +98,24 @@ class GetPolygonFromInferenceServiceAlgorithm(QgsProcessingAlgorithm):
         )
         crs = self.parameterAsCrs(parameters, self.CRS, context)
 
+        polygonize_parameters = (
+            {} if polygonize_parameters == "" else json.loads(polygonize_parameters)
+        )
+
+        response = requests.get(
+            f"http://{host}:{port}/polygonize",
+            params={"image_path": image_path},
+            json=polygonize_parameters,
+        )
+
         (sink, dest_id) = self.parameterAsSink(
             parameters, self.OUTPUT, context, [], QgsWkbTypes.Polygon, crs
         )
+
+        if response.status_code == 200:
+            for feature in QgsJsonUtils.stringToFeatureList(response.text):
+                sink.addFeature(feature, QgsFeatureSink.FastInsert)
+        return {self.OUTPUT: dest_id}
 
     def name(self):
         """
@@ -116,14 +132,14 @@ class GetPolygonFromInferenceServiceAlgorithm(QgsProcessingAlgorithm):
         Returns the translated algorithm name, which should be used for any
         user-visible display of the algorithm name.
         """
-        return self.tr("Create train test validate samples")
+        return self.tr("Get polygons from inference service")
 
     def group(self):
         """
         Returns the name of the group this algorithm belongs to. This string
         should be localised.
         """
-        return self.tr("Dataset Tools")
+        return self.tr("Inference Tools")
 
     def groupId(self):
         """
@@ -133,7 +149,7 @@ class GetPolygonFromInferenceServiceAlgorithm(QgsProcessingAlgorithm):
         contain lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return "datasettools"
+        return "inferencetools"
 
     def tr(self, string):
         """

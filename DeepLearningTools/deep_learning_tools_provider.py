@@ -46,6 +46,9 @@ from DeepLearningTools.core.processing_algorithms.create_train_test_validate_sam
 from DeepLearningTools.core.processing_algorithms.find_polygon_statistics_algorithm import (
     FindPolygonStatisticsAlgorithm,
 )
+from DeepLearningTools.core.processing_algorithms.get_polygon_from_inference_service import (
+    GetPolygonFromInferenceService,
+)
 
 
 class DeepLearningToolsProvider(QgsProcessingProvider):
@@ -69,6 +72,7 @@ class DeepLearningToolsProvider(QgsProcessingProvider):
             # CreateGridAlgorithm(),
             CreateTrainTestValidateSamplesAlgorithm(),
             FindPolygonStatisticsAlgorithm(),
+            GetPolygonFromInferenceService(),
         ]
         return algList
 
