@@ -7,7 +7,6 @@ services:
     volumes:
       # - /tmp/.X11-unix:/tmp/.X11-unix
       - ../DeepLearningTools:/tests_directory/DeepLearningTools
-      - ..:/github_repo
     environment:
       # - DISPLAY=unix$DISPLAY
       - DISPLAY=:99

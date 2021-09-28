@@ -6,7 +6,7 @@
 name=DeepLearningTools
 qgisMinimumVersion=3.14
 description=QGIS plugin to aid training Deep Learning Models
-version=0.2
+version=0.2.0
 author=Philipe Borba
 email=philipeborba@gmail.com
 
@@ -20,7 +20,7 @@ repository=https://github.com/phborba/DeepLearningTools
 
 hasProcessingProvider=yes
 # Uncomment the following line and add your changelog:
-# changelog=
+# changelog=changelog
 
 # Tags are comma separated with spaces allowed
 tags=python, deep learning

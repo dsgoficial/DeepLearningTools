@@ -1,3 +1,4 @@
+name: QGIS Plugin Repository Release
 on:
   release:
     types: published
