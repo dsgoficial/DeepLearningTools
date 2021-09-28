@@ -41,7 +41,7 @@ from qgis.core import (
     QgsProcessingMultiStepFeedback,
     QgsFeatureRequest,
     QgsProcessingParameterEnum,
-    QgsField
+    QgsField,
 )
 from qgis.PyQt.QtCore import QVariant
 from DeepLearningTools.core.image_processing.vector_utils import VectorUtils
@@ -65,11 +65,10 @@ class FindPolygonStatisticsPerTileAlgorithm(QgsProcessingAlgorithm):
     # Constants used to refer to parameters and outputs. They will be
     # used when calling the algorithm from another algorithm, or when
     # calling from the QGIS console.
-    INPUT = 'INPUT'
-    SELECTED = 'SELECTED'
-    OUTPUT = 'OUTPUT'
-    STATS = 'STATS'
-    
+    INPUT = "INPUT"
+    SELECTED = "SELECTED"
+    OUTPUT = "OUTPUT"
+    STATS = "STATS"
 
     def initAlgorithm(self, config):
         """
@@ -78,53 +77,46 @@ class FindPolygonStatisticsPerTileAlgorithm(QgsProcessingAlgorithm):
         """
 
         self.statistics = [
-            ('n_vertexes', self.tr('number of vertexes')),
-            ('main_angle', self.tr('main angle of the polygon')),
-            ('hole_count', self.tr('number of holes')),
-            ('area', self.tr('area')),
-            ('perimeter', self.tr('perimeter')),
-            ('compactness', self.tr('compactness of the polygon')),
-            ('fractal_dimension', self.tr('fractal dimension of the polygon')),
-            ('vibration_amplitude', self.tr('vibration amplitude of the polygon')),
-            ('vibration_frequency', self.tr('vibration frequency of the polygon')),
-            ('geometry_complexity', self.tr('gemetry complexity of the polygon')),
-            ('convexity', self.tr('convexity of the polygon'))
+            ("n_vertexes", self.tr("number of vertexes")),
+            ("main_angle", self.tr("main angle of the polygon")),
+            ("hole_count", self.tr("number of holes")),
+            ("area", self.tr("area")),
+            ("perimeter", self.tr("perimeter")),
+            ("compactness", self.tr("compactness of the polygon")),
+            ("fractal_dimension", self.tr("fractal dimension of the polygon")),
+            ("vibration_amplitude", self.tr("vibration amplitude of the polygon")),
+            ("vibration_frequency", self.tr("vibration frequency of the polygon")),
+            ("geometry_complexity", self.tr("gemetry complexity of the polygon")),
+            ("convexity", self.tr("convexity of the polygon")),
         ]
 
         # We add the input vector features source. It can have any kind of
         # geometry.
         self.addParameter(
             QgsProcessingParameterVectorLayer(
-                self.INPUT,
-                self.tr('Input layer'),
-                [QgsProcessing.TypeVectorPolygon]
+                self.INPUT, self.tr("Input layer"), [QgsProcessing.TypeVectorPolygon]
             )
         )
 
         self.addParameter(
             QgsProcessingParameterBoolean(
-                self.SELECTED,
-                self.tr('Process only selected features')
+                self.SELECTED, self.tr("Process only selected features")
             )
         )
 
         self.addParameter(
             QgsProcessingParameterEnum(
                 self.STATS,
-                self.tr('Statistics to calculate'),
+                self.tr("Statistics to calculate"),
                 options=[p[1] for p in self.statistics],
                 allowMultiple=True,
-                optional=False
+                optional=False,
             )
         )
 
         self.addParameter(
-            QgsProcessingParameterFeatureSink(
-                self.OUTPUT,
-                self.tr('Output layer')
-            )
+            QgsProcessingParameterFeatureSink(self.OUTPUT, self.tr("Output layer"))
         )
-
 
     def processAlgorithm(self, parameters, context, feedback):
         """
@@ -134,49 +126,38 @@ class FindPolygonStatisticsPerTileAlgorithm(QgsProcessingAlgorithm):
         # Retrieve the feature source and sink. The 'dest_id' variable is used
         # to uniquely identify the feature sink, and must be included in the
         # dictionary returned by the processAlgorithm function.
-        inputLyr = self.parameterAsVectorLayer(
-            parameters,
-            self.INPUT,
-            context
-        )
+        inputLyr = self.parameterAsVectorLayer(parameters, self.INPUT, context)
         if inputLyr is None:
             raise QgsProcessingException(
-                self.invalidSourceError(
-                    parameters,
-                    self.INPUT
-                )
+                self.invalidSourceError(parameters, self.INPUT)
             )
-        onlySelected = self.parameterAsBool(
-            parameters,
-            self.SELECTED,
-            context
+        onlySelected = self.parameterAsBool(parameters, self.SELECTED, context)
+
+        indexList = self.parameterAsEnums(parameters, self.STATS, context)
+
+        statList = (
+            [self.statistics[idx][0] for idx in indexList]
+            if indexList != []
+            else [i[0] for i in self.statistics]
         )
 
-        indexList = self.parameterAsEnums(
-                parameters,
-                self.STATS,
-                context
-            )
-
-        statList = [ 
-            self.statistics[idx][0] for idx in indexList
-        ] if indexList != [] else [
-            i[0] for i in self.statistics
-        ]
-
-        featCount = inputLyr.featureCount() if not onlySelected \
+        featCount = (
+            inputLyr.featureCount()
+            if not onlySelected
             else inputLyr.selectedFeatureCount()
-        features = inputLyr.getFeatures() if not onlySelected \
+        )
+        features = (
+            inputLyr.getFeatures()
+            if not onlySelected
             else inputLyr.getSelectedFeatures()
+        )
         # Compute the number of steps to display within the progress bar and
         # get features from source
         progress_step = 100.0 / featCount if featCount else 0
 
         fields = inputLyr.fields()
         for stat in statList:
-            fields.append(
-                QgsField(stat, QVariant.Double)
-            )
+            fields.append(QgsField(stat, QVariant.Double))
 
         (sink, dest_id) = self.parameterAsSink(
             parameters,
@@ -184,7 +165,7 @@ class FindPolygonStatisticsPerTileAlgorithm(QgsProcessingAlgorithm):
             context,
             fields,
             inputLyr.wkbType(),
-            inputLyr.sourceCrs()
+            inputLyr.sourceCrs(),
         )
 
         vector_utils = VectorUtils()
@@ -192,22 +173,13 @@ class FindPolygonStatisticsPerTileAlgorithm(QgsProcessingAlgorithm):
         for current_feat, feat in enumerate(features):
             if feedback is not None and feedback.isCanceled():
                 break
-            newFeat = vector_utils.calculateStatistics(
-                feat,
-                statList,
-                fields
-            )
-            sink.addFeature(
-                newFeat,
-                QgsFeatureSink.FastInsert
-            )
+            newFeat = vector_utils.calculateStatistics(feat, statList, fields)
+            sink.addFeature(newFeat, QgsFeatureSink.FastInsert)
             # self.current_feat += 1
             if feedback is not None:
-                feedback.setProgress(
-                    current_feat * progress_step
-                )
-        return {self.OUTPUT : dest_id}
-    
+                feedback.setProgress(current_feat * progress_step)
+        return {self.OUTPUT: dest_id}
+
     def name(self):
         """
         Returns the algorithm name, used for identifying the algorithm. This
@@ -216,7 +188,7 @@ class FindPolygonStatisticsPerTileAlgorithm(QgsProcessingAlgorithm):
         lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'Find polygon statistics per tile'
+        return "Find polygon statistics per tile"
 
     def displayName(self):
         """
@@ -240,10 +212,10 @@ class FindPolygonStatisticsPerTileAlgorithm(QgsProcessingAlgorithm):
         contain lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'Dataset Statistics'
+        return "Dataset Statistics"
 
     def tr(self, string):
-        return QCoreApplication.translate('Processing', string)
+        return QCoreApplication.translate("Processing", string)
 
     def createInstance(self):
         return FindPolygonStatisticsPerTileAlgorithm()

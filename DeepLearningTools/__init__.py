@@ -22,11 +22,12 @@
  This script initializes the plugin, making it known to QGIS.
 """
 
-__author__ = 'Philipe Borba'
-__date__ = '2020-03-12'
-__copyright__ = '(C) 2020 by Philipe Borba'
+__author__ = "Philipe Borba"
+__date__ = "2020-03-12"
+__copyright__ = "(C) 2020 by Philipe Borba"
 
 from .deep_learning_tools import DeepLearningTools
+
 deepLearningTools = None
 
 # noinspection PyPep8Naming

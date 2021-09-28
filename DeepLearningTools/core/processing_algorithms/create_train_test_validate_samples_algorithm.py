@@ -26,34 +26,36 @@ from PyQt5.QtCore import QCoreApplication
 import os
 from collections import defaultdict
 from qgis.PyQt.QtCore import QCoreApplication
-from qgis.core import (QgsProcessing,
-                       QgsFeatureSink,
-                       QgsProcessingAlgorithm,
-                       QgsProcessingParameterFeatureSource,
-                       QgsProcessingParameterFeatureSink,
-                       QgsProcessingParameterField,
-                       QgsProcessingParameterVectorLayer,
-                       QgsProcessingParameterBoolean,
-                       QgsProcessingException,
-                       QgsProcessingParameterNumber,
-                       QgsProcessingParameterExpression,
-                       QgsProcessingParameterString,
-                       QgsProcessingOutputVectorLayer,
-                       QgsProcessingParameterExtent,
-                       QgsFeatureRequest,
-                       QgsProject,
-                       QgsRasterLayer,
-                       QgsExpression,
-                       QgsExpressionContext,
-                       QgsExpressionContextUtils,
-                       QgsSpatialIndex,
-                       QgsProcessingMultiStepFeedback,
-                       QgsProcessingFeatureSourceDefinition
-                       )
+from qgis.core import (
+    QgsProcessing,
+    QgsFeatureSink,
+    QgsProcessingAlgorithm,
+    QgsProcessingParameterFeatureSource,
+    QgsProcessingParameterFeatureSink,
+    QgsProcessingParameterField,
+    QgsProcessingParameterVectorLayer,
+    QgsProcessingParameterBoolean,
+    QgsProcessingException,
+    QgsProcessingParameterNumber,
+    QgsProcessingParameterExpression,
+    QgsProcessingParameterString,
+    QgsProcessingOutputVectorLayer,
+    QgsProcessingParameterExtent,
+    QgsFeatureRequest,
+    QgsProject,
+    QgsRasterLayer,
+    QgsExpression,
+    QgsExpressionContext,
+    QgsExpressionContextUtils,
+    QgsSpatialIndex,
+    QgsProcessingMultiStepFeedback,
+    QgsProcessingFeatureSourceDefinition,
+)
 from DeepLearningTools.core.image_processing.image_utils import ImageUtils
 from qgis.utils import iface
 import processing
 import math, random
+
 
 class CreateTrainTestValidateSamplesAlgorithm(QgsProcessingAlgorithm):
     """
@@ -63,82 +65,72 @@ class CreateTrainTestValidateSamplesAlgorithm(QgsProcessingAlgorithm):
     CATEGORY_TOKEN_INDEX: index of the split list
     OUTPUT: list of outputs
     """
-    INPUT = 'INPUT'
-    PK_FIELD = 'PK_FIELD'
-    TRAIN_PERCENTAGE = 'TRAIN_PERCENTAGE'
-    TEST_PERCENTAGE = 'TEST_PERCENTAGE'
-    TRAIN_DATASET = 'TRAIN_DATASET'
-    TEST_DATASET = 'TEST_DATASET'
-    VALIDATION_DATASET = 'VALIDATION_DATASET'
+
+    INPUT = "INPUT"
+    PK_FIELD = "PK_FIELD"
+    TRAIN_PERCENTAGE = "TRAIN_PERCENTAGE"
+    TEST_PERCENTAGE = "TEST_PERCENTAGE"
+    TRAIN_DATASET = "TRAIN_DATASET"
+    TEST_DATASET = "TEST_DATASET"
+    VALIDATION_DATASET = "VALIDATION_DATASET"
+
     def initAlgorithm(self, config):
         """
         Parameter setting.
         """
         self.addParameter(
             QgsProcessingParameterFeatureSource(
-                self.INPUT,
-                self.tr('Input layer'),
-                [QgsProcessing.TypeVector]
+                self.INPUT, self.tr("Input layer"), [QgsProcessing.TypeVector]
             )
         )
 
         self.addParameter(
             QgsProcessingParameterNumber(
                 self.TRAIN_PERCENTAGE,
-                self.tr('Train dataset percentage'),
+                self.tr("Train dataset percentage"),
                 minValue=0,
                 defaultValue=60,
-                maxValue=100
+                maxValue=100,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
                 self.TEST_PERCENTAGE,
-                self.tr('Test dataset percentage (validate percentage will be the complement of the sum of train and test)'),
+                self.tr(
+                    "Test dataset percentage (validate percentage will be the complement of the sum of train and test)"
+                ),
                 minValue=0,
                 defaultValue=20,
-                maxValue=100
+                maxValue=100,
             )
         )
         self.addParameter(
             QgsProcessingParameterFeatureSink(
-                self.TRAIN_DATASET,
-                self.tr('Train dataset')
+                self.TRAIN_DATASET, self.tr("Train dataset")
             )
         )
         self.addParameter(
             QgsProcessingParameterFeatureSink(
-                self.TEST_DATASET,
-                self.tr('Test dataset')
+                self.TEST_DATASET, self.tr("Test dataset")
             )
         )
         self.addParameter(
             QgsProcessingParameterFeatureSink(
-                self.VALIDATION_DATASET,
-                self.tr('Validation dataset')
+                self.VALIDATION_DATASET, self.tr("Validation dataset")
             )
         )
-
 
     def processAlgorithm(self, parameters, context, feedback):
         """
         Here is where the processing itself takes place.
         """
-        source = self.parameterAsSource(
-            parameters,
-            self.INPUT,
-            context
-        )
+        source = self.parameterAsSource(parameters, self.INPUT, context)
 
         trainPercentage = self.parameterAsDouble(
-            parameters,
-            self.TRAIN_PERCENTAGE,
-            context
+            parameters, self.TRAIN_PERCENTAGE, context
         )
         testPercentage = self.parameterAsDouble(
-            parameters,
-            self.TEST_PERCENTAGE,
-            context
+            parameters, self.TEST_PERCENTAGE, context
         )
         (train_sink, train_dest_id) = self.parameterAsSink(
             parameters,
@@ -146,7 +138,7 @@ class CreateTrainTestValidateSamplesAlgorithm(QgsProcessingAlgorithm):
             context,
             source.fields(),
             source.wkbType(),
-            source.sourceCrs()
+            source.sourceCrs(),
         )
         (test_sink, test_dest_id) = self.parameterAsSink(
             parameters,
@@ -154,7 +146,7 @@ class CreateTrainTestValidateSamplesAlgorithm(QgsProcessingAlgorithm):
             context,
             source.fields(),
             source.wkbType(),
-            source.sourceCrs()
+            source.sourceCrs(),
         )
         (val_sink, val_dest_id) = self.parameterAsSink(
             parameters,
@@ -162,39 +154,29 @@ class CreateTrainTestValidateSamplesAlgorithm(QgsProcessingAlgorithm):
             context,
             source.fields(),
             source.wkbType(),
-            source.sourceCrs()
+            source.sourceCrs(),
         )
         inputFeats = set(feat for feat in source.getFeatures())
-        #training data
-        train_size = math.ceil(len(inputFeats)*trainPercentage/100)
+        # training data
+        train_size = math.ceil(len(inputFeats) * trainPercentage / 100)
         trainSet = set(random.sample(inputFeats, train_size))
-        #test data
-        test_size = math.ceil(len(inputFeats)*testPercentage/100)
+        # test data
+        test_size = math.ceil(len(inputFeats) * testPercentage / 100)
         complementSet = inputFeats.difference(trainSet)
         testSet = set(random.sample(complementSet, test_size))
-        #validation data
+        # validation data
         valSet = complementSet.difference(testSet)
 
-        train_sink.addFeatures(
-            trainSet,
-            QgsFeatureSink.FastInsert
-        )
+        train_sink.addFeatures(trainSet, QgsFeatureSink.FastInsert)
 
-        test_sink.addFeatures(
-            testSet,
-            QgsFeatureSink.FastInsert
-        )
+        test_sink.addFeatures(testSet, QgsFeatureSink.FastInsert)
 
-        val_sink.addFeatures(
-            valSet,
-            QgsFeatureSink.FastInsert
-        )
+        val_sink.addFeatures(valSet, QgsFeatureSink.FastInsert)
         return {
             self.TRAIN_DATASET: train_dest_id,
             self.TEST_DATASET: test_dest_id,
-            self.VALIDATION_DATASET: val_dest_id
+            self.VALIDATION_DATASET: val_dest_id,
         }
-
 
     def name(self):
         """
@@ -204,21 +186,21 @@ class CreateTrainTestValidateSamplesAlgorithm(QgsProcessingAlgorithm):
         lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'createtraintestvalidatesamples'
+        return "createtraintestvalidatesamples"
 
     def displayName(self):
         """
         Returns the translated algorithm name, which should be used for any
         user-visible display of the algorithm name.
         """
-        return self.tr('Create train test validate samples')
+        return self.tr("Create train test validate samples")
 
     def group(self):
         """
         Returns the name of the group this algorithm belongs to. This string
         should be localised.
         """
-        return self.tr('Dataset Tools')
+        return self.tr("Dataset Tools")
 
     def groupId(self):
         """
@@ -228,13 +210,15 @@ class CreateTrainTestValidateSamplesAlgorithm(QgsProcessingAlgorithm):
         contain lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'datasettools'
+        return "datasettools"
 
     def tr(self, string):
         """
         Translates input string.
         """
-        return QCoreApplication.translate('CreateTrainTestValidateSamplesAlgorithm', string)
+        return QCoreApplication.translate(
+            "CreateTrainTestValidateSamplesAlgorithm", string
+        )
 
     def createInstance(self):
         """

@@ -22,28 +22,33 @@
  ***************************************************************************/
 """
 
-__author__ = 'Philipe Borba'
-__date__ = '2020-03-12'
-__copyright__ = '(C) 2020 by Philipe Borba'
+__author__ = "Philipe Borba"
+__date__ = "2020-03-12"
+__copyright__ = "(C) 2020 by Philipe Borba"
 
 # This will get replaced with a git SHA1 when you do a git archive
 
-__revision__ = '$Format:%H$'
+__revision__ = "$Format:%H$"
 
 from qgis.core import QgsProcessingProvider
-from DeepLearningTools.core.processing_algorithms.create_training_labels_from_layer_algorithm import \
-    CreateTrainingLabelsFromLayerAlgorithm
-from DeepLearningTools.core.processing_algorithms.load_images_from_dataset_algorithm import \
-    LoadDatasetImagesAlgorithm
+from DeepLearningTools.core.processing_algorithms.create_training_labels_from_layer_algorithm import (
+    CreateTrainingLabelsFromLayerAlgorithm,
+)
+from DeepLearningTools.core.processing_algorithms.load_images_from_dataset_algorithm import (
+    LoadDatasetImagesAlgorithm,
+)
+
 # from DeepLearningTools.core.processing_algorithms.create_grid_algorithm import \
 #     CreateGridAlgorithm
-from DeepLearningTools.core.processing_algorithms.create_train_test_validate_samples_algorithm import \
-    CreateTrainTestValidateSamplesAlgorithm
-from DeepLearningTools.core.processing_algorithms.find_polygon_statistics_algorithm import \
-    FindPolygonStatisticsAlgorithm
+from DeepLearningTools.core.processing_algorithms.create_train_test_validate_samples_algorithm import (
+    CreateTrainTestValidateSamplesAlgorithm,
+)
+from DeepLearningTools.core.processing_algorithms.find_polygon_statistics_algorithm import (
+    FindPolygonStatisticsAlgorithm,
+)
+
 
 class DeepLearningToolsProvider(QgsProcessingProvider):
-
     def __init__(self):
         """
         Default constructor.
@@ -63,7 +68,7 @@ class DeepLearningToolsProvider(QgsProcessingProvider):
             LoadDatasetImagesAlgorithm(),
             # CreateGridAlgorithm(),
             CreateTrainTestValidateSamplesAlgorithm(),
-            FindPolygonStatisticsAlgorithm()
+            FindPolygonStatisticsAlgorithm(),
         ]
         return algList
 
@@ -82,7 +87,7 @@ class DeepLearningToolsProvider(QgsProcessingProvider):
         string should be a unique, short, character only string, eg "qgis" or
         "gdal". This string should not be localised.
         """
-        return 'DeepLearningTools'
+        return "DeepLearningTools"
 
     def name(self):
         """
@@ -91,7 +96,7 @@ class DeepLearningToolsProvider(QgsProcessingProvider):
 
         This string should be short (e.g. "Lastools") and localised.
         """
-        return self.tr('DeepLearningTools')
+        return self.tr("DeepLearningTools")
 
     def icon(self):
         """

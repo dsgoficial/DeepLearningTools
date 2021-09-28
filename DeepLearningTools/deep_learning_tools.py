@@ -22,13 +22,13 @@
  ***************************************************************************/
 """
 
-__author__ = 'Philipe Borba'
-__date__ = '2020-03-12'
-__copyright__ = '(C) 2020 by Philipe Borba'
+__author__ = "Philipe Borba"
+__date__ = "2020-03-12"
+__copyright__ = "(C) 2020 by Philipe Borba"
 
 # This will get replaced with a git SHA1 when you do a git archive
 
-__revision__ = '$Format:%H$'
+__revision__ = "$Format:%H$"
 
 import os
 import sys
@@ -39,8 +39,7 @@ from qgis.PyQt.QtCore import QSettings, qVersion, QCoreApplication, QTranslator,
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QToolButton, QMenu, QAction
 from .deep_learning_tools_provider import DeepLearningToolsProvider
-from DeepLearningTools.gui.dataset_viewer_toolbar.viewer_toolbar import \
-    ViewerToolbar
+from DeepLearningTools.gui.dataset_viewer_toolbar.viewer_toolbar import ViewerToolbar
 
 from . import resources
 from . import resources_rc
@@ -53,8 +52,8 @@ cmd_folder = os.path.split(inspect.getfile(inspect.currentframe()))[0]
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
-class DeepLearningTools(object):
 
+class DeepLearningTools(object):
     def __init__(self, iface):
         """Constructor.
 
@@ -69,11 +68,10 @@ class DeepLearningTools(object):
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
         # initialize locale
-        locale = QSettings().value('locale/userLocale')[0:2]
+        locale = QSettings().value("locale/userLocale")[0:2]
         locale_path = os.path.join(
-            self.plugin_dir,
-            'i18n',
-            'DeepLearningTools_{}.qm'.format(locale))
+            self.plugin_dir, "i18n", "DeepLearningTools_{}.qm".format(locale)
+        )
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -82,7 +80,7 @@ class DeepLearningTools(object):
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr(u'&DeepLearningTools')
+        self.menu = self.tr(u"&DeepLearningTools")
 
         # Check if plugin was started the first time in current QGIS session
         # Must be set in initGui() to survive plugin reloads
@@ -102,8 +100,7 @@ class DeepLearningTools(object):
         :rtype: QString
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
-        return QCoreApplication.translate('DeepLearningTools', message)
-
+        return QCoreApplication.translate("DeepLearningTools", message)
 
     def add_action(
         self,
@@ -115,7 +112,8 @@ class DeepLearningTools(object):
         add_to_toolbar=True,
         status_tip=None,
         whats_this=None,
-        parent=None):
+        parent=None,
+    ):
         """Add a toolbar icon to the toolbar.
 
         :param icon_path: Path to the icon for this action. Can be a resource
@@ -171,9 +169,7 @@ class DeepLearningTools(object):
             self.iface.addToolBarIcon(action)
 
         if add_to_menu:
-            self.iface.addPluginToMenu(
-                self.menu,
-                action)
+            self.iface.addPluginToMenu(self.menu, action)
 
         self.actions.append(action)
 
@@ -186,8 +182,8 @@ class DeepLearningTools(object):
 
     def initGui(self):
         self.initProcessing()
-        self.toolbar = self.iface.addToolBar(u'DeepLearningTools')
-        self.toolbar.setObjectName(u'DeepLearningTools')
+        self.toolbar = self.iface.addToolBar(u"DeepLearningTools")
+        self.toolbar.setObjectName(u"DeepLearningTools")
         self.viewer = ViewerToolbar(self.iface)
         self.widgetList.append(self.viewer)
         self.toolbar.addWidget(self.viewer)

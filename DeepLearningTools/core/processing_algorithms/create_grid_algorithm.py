@@ -26,20 +26,21 @@ import os
 import itertools
 from pathlib import Path
 from qgis.PyQt.QtCore import QCoreApplication
-from qgis.core import (QgsProcessing,
-                       QgsFeatureSink,
-                       QgsProcessingAlgorithm,
-                       QgsProcessingParameterFeatureSource,
-                       QgsProcessingParameterFeatureSink,
-                       QgsProcessingParameterField,
-                       QgsProcessingParameterVectorLayer,
-                       QgsProcessingParameterMultipleLayers,
-                       QgsProcessingParameterBoolean,
-                       QgsProcessingException,
-                       QgsProcessingParameterNumber,
-                       QgsProcessingMultiStepFeedback,
-                       QgsFeatureRequest
-                       )
+from qgis.core import (
+    QgsProcessing,
+    QgsFeatureSink,
+    QgsProcessingAlgorithm,
+    QgsProcessingParameterFeatureSource,
+    QgsProcessingParameterFeatureSink,
+    QgsProcessingParameterField,
+    QgsProcessingParameterVectorLayer,
+    QgsProcessingParameterMultipleLayers,
+    QgsProcessingParameterBoolean,
+    QgsProcessingException,
+    QgsProcessingParameterNumber,
+    QgsProcessingMultiStepFeedback,
+    QgsFeatureRequest,
+)
 from DeepLearningTools.core.image_processing.vector_utils import VectorUtils
 import concurrent.futures
 
@@ -61,12 +62,12 @@ class CreateGridAlgorithm(QgsProcessingAlgorithm):
     # Constants used to refer to parameters and outputs. They will be
     # used when calling the algorithm from another algorithm, or when
     # calling from the QGIS console.
-    INPUT = 'INPUT'
-    SELECTED = 'SELECTED'
-    OUTPUT = 'OUTPUT'
-    INPUT_POLYGONS = 'INPUT_POLYGONS'
-    NUM_CPU = 'NUM_CPU'
-    NUM_FEATS = 'NUM_FEATS'
+    INPUT = "INPUT"
+    SELECTED = "SELECTED"
+    OUTPUT = "OUTPUT"
+    INPUT_POLYGONS = "INPUT_POLYGONS"
+    NUM_CPU = "NUM_CPU"
+    NUM_FEATS = "NUM_FEATS"
 
     def initAlgorithm(self, config):
         """
@@ -78,54 +79,47 @@ class CreateGridAlgorithm(QgsProcessingAlgorithm):
         # geometry.
         self.addParameter(
             QgsProcessingParameterVectorLayer(
-                self.INPUT,
-                self.tr('Input layer'),
-                [QgsProcessing.TypeVectorPolygon]
+                self.INPUT, self.tr("Input layer"), [QgsProcessing.TypeVectorPolygon]
             )
         )
 
         self.addParameter(
             QgsProcessingParameterBoolean(
-                self.SELECTED,
-                self.tr('Process only selected features')
+                self.SELECTED, self.tr("Process only selected features")
             )
         )
 
         self.addParameter(
             QgsProcessingParameterMultipleLayers(
                 self.INPUT_POLYGONS,
-                self.tr('Input polygons'),
-                QgsProcessing.TypeVectorPolygon
+                self.tr("Input polygons"),
+                QgsProcessing.TypeVectorPolygon,
             )
         )
 
         self.addParameter(
             QgsProcessingParameterNumber(
                 self.NUM_CPU,
-                self.tr('Number of CPUs used in processing'),
+                self.tr("Number of CPUs used in processing"),
                 QgsProcessingParameterNumber.Integer,
                 defaultValue=1,
                 minValue=1,
-                maxValue=os.cpu_count()
+                maxValue=os.cpu_count(),
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
                 self.NUM_FEATS,
-                self.tr('Number of features fetched per thread'),
+                self.tr("Number of features fetched per thread"),
                 QgsProcessingParameterNumber.Integer,
                 defaultValue=10000,
-                minValue=1
+                minValue=1,
             )
         )
 
         self.addParameter(
-            QgsProcessingParameterFeatureSink(
-                self.OUTPUT,
-                self.tr('Output layer')
-            )
+            QgsProcessingParameterFeatureSink(self.OUTPUT, self.tr("Output layer"))
         )
-
 
     def processAlgorithm(self, parameters, context, feedback):
         """
@@ -135,27 +129,22 @@ class CreateGridAlgorithm(QgsProcessingAlgorithm):
         # Retrieve the feature source and sink. The 'dest_id' variable is used
         # to uniquely identify the feature sink, and must be included in the
         # dictionary returned by the processAlgorithm function.
-        inputLyr = self.parameterAsVectorLayer(
-            parameters,
-            self.INPUT,
-            context
-        )
+        inputLyr = self.parameterAsVectorLayer(parameters, self.INPUT, context)
         if inputLyr is None:
             raise QgsProcessingException(
-                self.invalidSourceError(
-                    parameters,
-                    self.INPUT
-                )
+                self.invalidSourceError(parameters, self.INPUT)
             )
-        onlySelected = self.parameterAsBool(
-            parameters,
-            self.SELECTED,
-            context
-        )
-        featCount = inputLyr.featureCount() if not onlySelected \
+        onlySelected = self.parameterAsBool(parameters, self.SELECTED, context)
+        featCount = (
+            inputLyr.featureCount()
+            if not onlySelected
             else inputLyr.selectedFeatureCount()
-        features = inputLyr.getFeatures() if not onlySelected \
+        )
+        features = (
+            inputLyr.getFeatures()
+            if not onlySelected
             else inputLyr.getSelectedFeatures()
+        )
         # Compute the number of steps to display within the progress bar and
         # get features from source
         self.total = 100.0 / featCount if featCount else 0
@@ -166,55 +155,35 @@ class CreateGridAlgorithm(QgsProcessingAlgorithm):
             context,
             inputLyr.fields(),
             inputLyr.wkbType(),
-            inputLyr.sourceCrs()
+            inputLyr.sourceCrs(),
         )
 
         vector_utils = VectorUtils()
         inputPolygonsLyrList = self.parameterAsLayerList(
-            parameters,
-            self.INPUT_POLYGONS,
-            context
+            parameters, self.INPUT_POLYGONS, context
         )
         if inputPolygonsLyrList == []:
             raise QgsProcessingException(
-                self.invalidSourceError(
-                    parameters,
-                    self.INPUT_POLYGONS
-                )
+                self.invalidSourceError(parameters, self.INPUT_POLYGONS)
             )
-        num_workers = self.parameterAsInt(
-            parameters,
-            self.NUM_CPU,
-            context
-        )
-        num_feats_per_worker = self.parameterAsInt(
-            parameters,
-            self.NUM_FEATS,
-            context
-        )
+        num_workers = self.parameterAsInt(parameters, self.NUM_CPU, context)
+        num_feats_per_worker = self.parameterAsInt(parameters, self.NUM_FEATS, context)
+
         def compute(feature):
             geom = feature.geometry()
             request = QgsFeatureRequest()
             request.setFilterRect(geom.boundingBox())
             # for lyr in inputPolygonsLyrList:
-            featList = map(
-                lambda x: x.getFeatures(request),
-                inputPolygonsLyrList
-            )
+            featList = map(lambda x: x.getFeatures(request), inputPolygonsLyrList)
             for feat in itertools.chain.from_iterable(featList):
                 if feedback is not None and feedback.isCanceled():
                     return
                 if geom.intersects(feat.geometry()):
-                    sink.addFeature(
-                        feature,
-                        QgsFeatureSink.FastInsert
-                    )
+                    sink.addFeature(feature, QgsFeatureSink.FastInsert)
                     break
             self.current_feat += 1
             if feedback is not None:
-                feedback.setProgress(
-                    int(self.current_feat * self.total)
-                )
+                feedback.setProgress(int(self.current_feat * self.total))
             return
 
         self.current_feat = 0
@@ -234,14 +203,12 @@ class CreateGridAlgorithm(QgsProcessingAlgorithm):
                 # Schedule the next set of futures.  We don't want more than N futures
                 # in the pool at a time, to keep memory consumption down.
                 for task in itertools.islice(features, len(done)):
-                    futures.add(
-                        executor.submit(compute, task)
-                    )
+                    futures.add(executor.submit(compute, task))
             done, futures = concurrent.futures.wait(
-                    futures, return_when=concurrent.futures.ALL_COMPLETED
-                )
-            return {self.OUTPUT : dest_id}
-    
+                futures, return_when=concurrent.futures.ALL_COMPLETED
+            )
+            return {self.OUTPUT: dest_id}
+
     def name(self):
         """
         Returns the algorithm name, used for identifying the algorithm. This
@@ -250,7 +217,7 @@ class CreateGridAlgorithm(QgsProcessingAlgorithm):
         lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'Create Create Grid that intersect label data'
+        return "Create Create Grid that intersect label data"
 
     def displayName(self):
         """
@@ -274,10 +241,10 @@ class CreateGridAlgorithm(QgsProcessingAlgorithm):
         contain lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'Labelling'
+        return "Labelling"
 
     def tr(self, string):
-        return QCoreApplication.translate('Processing', string)
+        return QCoreApplication.translate("Processing", string)
 
     def createInstance(self):
         return CreateGridAlgorithm()

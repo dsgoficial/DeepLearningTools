@@ -25,17 +25,18 @@
 import os
 from pathlib import Path
 from qgis.PyQt.QtCore import QCoreApplication
-from qgis.core import (QgsProcessing,
-                       QgsFeatureSink,
-                       QgsProcessingAlgorithm,
-                       QgsProcessingParameterFeatureSource,
-                       QgsProcessingParameterFeatureSink,
-                       QgsProcessingParameterField,
-                       QgsProcessingParameterVectorLayer,
-                       QgsProcessingParameterBoolean,
-                       QgsProcessingException,
-                       QgsProcessingParameterNumber
-                       )
+from qgis.core import (
+    QgsProcessing,
+    QgsFeatureSink,
+    QgsProcessingAlgorithm,
+    QgsProcessingParameterFeatureSource,
+    QgsProcessingParameterFeatureSink,
+    QgsProcessingParameterField,
+    QgsProcessingParameterVectorLayer,
+    QgsProcessingParameterBoolean,
+    QgsProcessingException,
+    QgsProcessingParameterNumber,
+)
 from DeepLearningTools.core.image_processing.image_utils import ImageUtils
 import concurrent.futures
 
@@ -58,13 +59,13 @@ class CreateTrainingLabelsFromLayerAlgorithm(QgsProcessingAlgorithm):
     # used when calling the algorithm from another algorithm, or when
     # calling from the QGIS console.
 
-    OUTPUT = 'OUTPUT'
-    IMAGE_ATTRIBUTE = 'IMAGE_ATTRIBUTE'
-    OUTPUT_LABEL_ATTRIBUTE_PATH = 'OUTPUT_LABEL_ATTRIBUTE_PATH'
-    INPUT = 'INPUT'
-    INPUT_POLYGONS = 'INPUT_POLYGONS'
-    SELECTED = 'SELECTED'
-    NUM_CPU = 'NUM_CPU'
+    OUTPUT = "OUTPUT"
+    IMAGE_ATTRIBUTE = "IMAGE_ATTRIBUTE"
+    OUTPUT_LABEL_ATTRIBUTE_PATH = "OUTPUT_LABEL_ATTRIBUTE_PATH"
+    INPUT = "INPUT"
+    INPUT_POLYGONS = "INPUT_POLYGONS"
+    SELECTED = "SELECTED"
+    NUM_CPU = "NUM_CPU"
 
     def initAlgorithm(self, config):
         """
@@ -76,58 +77,54 @@ class CreateTrainingLabelsFromLayerAlgorithm(QgsProcessingAlgorithm):
         # geometry.
         self.addParameter(
             QgsProcessingParameterVectorLayer(
-                self.INPUT,
-                self.tr('Input layer'),
-                [QgsProcessing.TypeVectorPolygon]
+                self.INPUT, self.tr("Input layer"), [QgsProcessing.TypeVectorPolygon]
             )
         )
 
         self.addParameter(
             QgsProcessingParameterBoolean(
-                self.SELECTED,
-                self.tr('Process only selected features')
+                self.SELECTED, self.tr("Process only selected features")
             )
         )
 
         self.addParameter(
             QgsProcessingParameterField(
                 self.IMAGE_ATTRIBUTE,
-                self.tr('Image attribute'),
-                None, 
-                'INPUT',
-                QgsProcessingParameterField.Any
+                self.tr("Image attribute"),
+                None,
+                "INPUT",
+                QgsProcessingParameterField.Any,
             )
         )
 
         self.addParameter(
             QgsProcessingParameterField(
                 self.OUTPUT_LABEL_ATTRIBUTE_PATH,
-                self.tr('Output label attribute'),
-                None, 
-                'INPUT',
-                QgsProcessingParameterField.Any
+                self.tr("Output label attribute"),
+                None,
+                "INPUT",
+                QgsProcessingParameterField.Any,
             )
         )
 
         self.addParameter(
             QgsProcessingParameterVectorLayer(
                 self.INPUT_POLYGONS,
-                self.tr('Input polygons'),
-                [QgsProcessing.TypeVectorPolygon]
+                self.tr("Input polygons"),
+                [QgsProcessing.TypeVectorPolygon],
             )
         )
 
         self.addParameter(
             QgsProcessingParameterNumber(
                 self.NUM_CPU,
-                self.tr('Number of CPUs used in processing'),
+                self.tr("Number of CPUs used in processing"),
                 QgsProcessingParameterNumber.Integer,
                 defaultValue=1,
                 minValue=1,
-                maxValue=os.cpu_count()
+                maxValue=os.cpu_count(),
             )
         )
-
 
     def processAlgorithm(self, parameters, context, feedback):
         """
@@ -137,74 +134,50 @@ class CreateTrainingLabelsFromLayerAlgorithm(QgsProcessingAlgorithm):
         # Retrieve the feature source and sink. The 'dest_id' variable is used
         # to uniquely identify the feature sink, and must be included in the
         # dictionary returned by the processAlgorithm function.
-        inputLyr = self.parameterAsVectorLayer(
-            parameters,
-            self.INPUT,
-            context
-        )
+        inputLyr = self.parameterAsVectorLayer(parameters, self.INPUT, context)
         if inputLyr is None:
             raise QgsProcessingException(
-                self.invalidSourceError(
-                    parameters,
-                    self.INPUT
-                )
+                self.invalidSourceError(parameters, self.INPUT)
             )
-        onlySelected = self.parameterAsBool(
-            parameters,
-            self.SELECTED,
-            context
-        )
-        featCount = inputLyr.featureCount() if not onlySelected \
+        onlySelected = self.parameterAsBool(parameters, self.SELECTED, context)
+        featCount = (
+            inputLyr.featureCount()
+            if not onlySelected
             else inputLyr.selectedFeatureCount()
-        features = inputLyr.getFeatures() if not onlySelected \
+        )
+        features = (
+            inputLyr.getFeatures()
+            if not onlySelected
             else inputLyr.getSelectedFeatures()
+        )
         # Compute the number of steps to display within the progress bar and
         # get features from source
         total = 100.0 / featCount if featCount else 0
 
         image_attribute = self.parameterAsFields(
-            parameters,
-            self.IMAGE_ATTRIBUTE,
-            context
+            parameters, self.IMAGE_ATTRIBUTE, context
         )[0]
 
         output_attribute = self.parameterAsFields(
-            parameters,
-            self.OUTPUT_LABEL_ATTRIBUTE_PATH,
-            context
+            parameters, self.OUTPUT_LABEL_ATTRIBUTE_PATH, context
         )[0]
         image_utils = ImageUtils()
         inputPolygonsLyr = self.parameterAsVectorLayer(
-            parameters,
-            self.INPUT_POLYGONS,
-            context
+            parameters, self.INPUT_POLYGONS, context
         )
         if inputPolygonsLyr is None:
             raise QgsProcessingException(
-                self.invalidSourceError(
-                    parameters,
-                    self.INPUT_POLYGONS
-                )
+                self.invalidSourceError(parameters, self.INPUT_POLYGONS)
             )
-        num_workers = self.parameterAsInt(
-            parameters,
-            self.NUM_CPU,
-            context
-        )
+        num_workers = self.parameterAsInt(parameters, self.NUM_CPU, context)
+
         def compute(feature):
-            output_folder = os.path.dirname(
-                    feature[output_attribute]
-                )
-            Path(output_folder).mkdir(
-                parents=True,
-                exist_ok=True
-            )
+            output_folder = os.path.dirname(feature[output_attribute])
+            Path(output_folder).mkdir(parents=True, exist_ok=True)
             image_utils.create_image_label(
-                feature[image_attribute],
-                feature[output_attribute],
-                inputPolygonsLyr
+                feature[image_attribute], feature[output_attribute], inputPolygonsLyr
             )
-        
+
         pool = concurrent.futures.ThreadPoolExecutor(num_workers)
         futures = []
         current_feat = 0
@@ -230,7 +203,7 @@ class CreateTrainingLabelsFromLayerAlgorithm(QgsProcessingAlgorithm):
         lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'Create Training Labels From Vector Data'
+        return "Create Training Labels From Vector Data"
 
     def displayName(self):
         """
@@ -254,10 +227,10 @@ class CreateTrainingLabelsFromLayerAlgorithm(QgsProcessingAlgorithm):
         contain lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'Labelling'
+        return "Labelling"
 
     def tr(self, string):
-        return QCoreApplication.translate('Processing', string)
+        return QCoreApplication.translate("Processing", string)
 
     def createInstance(self):
         return CreateTrainingLabelsFromLayerAlgorithm()

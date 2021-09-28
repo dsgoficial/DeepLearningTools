@@ -26,27 +26,28 @@ from PyQt5.QtCore import QCoreApplication
 import os
 from pathlib import Path
 from qgis.PyQt.QtCore import QCoreApplication
-from qgis.core import (QgsProcessing,
-                       QgsFeatureSink,
-                       QgsProcessingAlgorithm,
-                       QgsProcessingParameterFeatureSource,
-                       QgsProcessingParameterFeatureSink,
-                       QgsProcessingParameterField,
-                       QgsProcessingParameterVectorLayer,
-                       QgsProcessingParameterBoolean,
-                       QgsProcessingException,
-                       QgsProcessingParameterNumber,
-                       QgsProcessingParameterExpression,
-                       QgsProcessingParameterString,
-                       QgsProcessingOutputMultipleLayers,
-                       QgsProcessingParameterExtent,
-                       QgsFeatureRequest,
-                       QgsProject,
-                       QgsRasterLayer,
-                       QgsExpression,
-                       QgsExpressionContext,
-                       QgsExpressionContextUtils
-                       )
+from qgis.core import (
+    QgsProcessing,
+    QgsFeatureSink,
+    QgsProcessingAlgorithm,
+    QgsProcessingParameterFeatureSource,
+    QgsProcessingParameterFeatureSink,
+    QgsProcessingParameterField,
+    QgsProcessingParameterVectorLayer,
+    QgsProcessingParameterBoolean,
+    QgsProcessingException,
+    QgsProcessingParameterNumber,
+    QgsProcessingParameterExpression,
+    QgsProcessingParameterString,
+    QgsProcessingOutputMultipleLayers,
+    QgsProcessingParameterExtent,
+    QgsFeatureRequest,
+    QgsProject,
+    QgsRasterLayer,
+    QgsExpression,
+    QgsExpressionContext,
+    QgsExpressionContextUtils,
+)
 from DeepLearningTools.core.image_processing.image_utils import ImageUtils
 from qgis.utils import iface
 
@@ -59,83 +60,73 @@ class LoadDatasetImagesAlgorithm(QgsProcessingAlgorithm):
     CATEGORY_TOKEN_INDEX: index of the split list
     OUTPUT: list of outputs
     """
-    INPUT = 'INPUT'
-    SELECTED = 'SELECTED'
-    EXTENT = 'EXTENT'
-    IMAGE_ATTRIBUTE = 'IMAGE_ATTRIBUTE'
-    GROUP_EXPRESSION = 'GROUP_EXPRESSION'
-    NAME_TAG = 'NAME_TAG'
-    ADD_TO_CANVAS = 'ADD_TO_CANVAS'
-    UNIQUE_LOAD = 'UNIQUE_LOAD'
-    OUTPUT = 'OUTPUT'
+
+    INPUT = "INPUT"
+    SELECTED = "SELECTED"
+    EXTENT = "EXTENT"
+    IMAGE_ATTRIBUTE = "IMAGE_ATTRIBUTE"
+    GROUP_EXPRESSION = "GROUP_EXPRESSION"
+    NAME_TAG = "NAME_TAG"
+    ADD_TO_CANVAS = "ADD_TO_CANVAS"
+    UNIQUE_LOAD = "UNIQUE_LOAD"
+    OUTPUT = "OUTPUT"
+
     def initAlgorithm(self, config):
         """
         Parameter setting.
         """
         self.addParameter(
             QgsProcessingParameterVectorLayer(
-                self.INPUT,
-                self.tr('Input layer'),
-                [QgsProcessing.TypeVectorPolygon]
+                self.INPUT, self.tr("Input layer"), [QgsProcessing.TypeVectorPolygon]
             )
         )
 
         self.addParameter(
             QgsProcessingParameterBoolean(
-                self.SELECTED,
-                self.tr('Process only selected features')
+                self.SELECTED, self.tr("Process only selected features")
             )
         )
         self.addParameter(
-            QgsProcessingParameterExtent(
-                self.EXTENT,
-                self.tr('Extent'),
-                optional=True
-            )
+            QgsProcessingParameterExtent(self.EXTENT, self.tr("Extent"), optional=True)
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.IMAGE_ATTRIBUTE,
-                self.tr('Image attribute'),
-                None, 
-                'INPUT',
-                QgsProcessingParameterField.String
+                self.tr("Image attribute"),
+                None,
+                "INPUT",
+                QgsProcessingParameterField.String,
             )
         )
         self.addParameter(
             QgsProcessingParameterBoolean(
-                self.ADD_TO_CANVAS,
-                self.tr('Add to canvas'),
-                defaultValue=True
+                self.ADD_TO_CANVAS, self.tr("Add to canvas"), defaultValue=True
             )
         )
         self.addParameter(
             QgsProcessingParameterBoolean(
-                self.UNIQUE_LOAD,
-                self.tr('Unique load'),
-                defaultValue=True
+                self.UNIQUE_LOAD, self.tr("Unique load"), defaultValue=True
             )
         )
         self.addParameter(
             QgsProcessingParameterExpression(
                 self.GROUP_EXPRESSION,
-                self.tr('Group expression'),
+                self.tr("Group expression"),
                 defaultValue="",
-                optional=True
+                optional=True,
             )
         )
         self.addParameter(
             QgsProcessingParameterString(
                 self.NAME_TAG,
-                self.tr('String used as prefix in images'),
+                self.tr("String used as prefix in images"),
                 defaultValue="",
-                optional=True
+                optional=True,
             )
         )
         self.addOutput(
             QgsProcessingOutputMultipleLayers(
-                self.OUTPUT,
-                self.tr('Loaded raster layers')
+                self.OUTPUT, self.tr("Loaded raster layers")
             )
         )
 
@@ -143,80 +134,52 @@ class LoadDatasetImagesAlgorithm(QgsProcessingAlgorithm):
         """
         Here is where the processing itself takes place.
         """
-        inputLyr = self.parameterAsVectorLayer(
-            parameters,
-            self.INPUT,
-            context
-        )
+        inputLyr = self.parameterAsVectorLayer(parameters, self.INPUT, context)
         if inputLyr is None:
             raise QgsProcessingException(
-                self.invalidSourceError(
-                    parameters,
-                    self.INPUT
-                )
+                self.invalidSourceError(parameters, self.INPUT)
             )
-        onlySelected = self.parameterAsBool(
-            parameters,
-            self.SELECTED,
-            context
-        )
+        onlySelected = self.parameterAsBool(parameters, self.SELECTED, context)
         attributeName = self.parameterAsFields(
-            parameters,
-            self.IMAGE_ATTRIBUTE,
-            context
+            parameters, self.IMAGE_ATTRIBUTE, context
         )[0]
         groupExpression = self.parameterAsExpression(
-            parameters,
-            self.GROUP_EXPRESSION,
-            context
+            parameters, self.GROUP_EXPRESSION, context
         )
-        imageTag = self.parameterAsString(
-            parameters,
-            self.NAME_TAG,
-            context
-        )
+        imageTag = self.parameterAsString(parameters, self.NAME_TAG, context)
         boundingBoxGeometry = self.parameterAsExtentGeometry(
-            parameters,
-            self.EXTENT,
-            context
+            parameters, self.EXTENT, context
         )
-        loadToCanvas = self.parameterAsBoolean(
-            parameters,
-            self.ADD_TO_CANVAS,
-            context
+        loadToCanvas = self.parameterAsBoolean(parameters, self.ADD_TO_CANVAS, context)
+        uniqueLoad = self.parameterAsBoolean(parameters, self.UNIQUE_LOAD, context)
+        loadedLayers = (
+            {
+                i.dataProvider().dataSourceUri(): i.id()
+                for i in iface.mapCanvas().layers()
+                if isinstance(i, QgsRasterLayer)
+            }
+            if uniqueLoad
+            else {}
         )
-        uniqueLoad = self.parameterAsBoolean(
-            parameters,
-            self.UNIQUE_LOAD,
-            context
-        )
-        loadedLayers = {
-            i.dataProvider().dataSourceUri() : i.id()
-                for i in iface.mapCanvas().layers()\
-                    if isinstance(i, QgsRasterLayer)
-         } if uniqueLoad else {}
         outputLayers = {}
         request = QgsFeatureRequest()
         if boundingBoxGeometry is not None:
             request.setFilterRect(boundingBoxGeometry.boundingBox())
         request.setFlags(QgsFeatureRequest.NoGeometry)
-        request.addOrderBy(
-            attributeName,
-            ascending=True
-        )
-        features = inputLyr.getFeatures(request) if not onlySelected \
+        request.addOrderBy(attributeName, ascending=True)
+        features = (
+            inputLyr.getFeatures(request)
+            if not onlySelected
             else inputLyr.getSelectedFeatures(request)
-        #calculate size
+        )
+        # calculate size
         featList = [i for i in features]
         listSize = len(featList)
-        progressStep = 100/listSize if listSize else 0
-        #remaining parameters
+        progressStep = 100 / listSize if listSize else 0
+        # remaining parameters
         if loadToCanvas:
             rootNode = QgsProject.instance().layerTreeRoot()
-            datasetImageNode = self.createGroup(
-                self.tr('Dataset Images'),
-                rootNode
-            )
+            datasetImageNode = self.createGroup(self.tr("Dataset Images"), rootNode)
             iface.mapCanvas().freeze(True)
         else:
             datasetImageNode = None
@@ -226,26 +189,28 @@ class LoadDatasetImagesAlgorithm(QgsProcessingAlgorithm):
             image_path = feat[attributeName]
             if image_path in loadedLayers:
                 outputLayers[image_path] = loadedLayers[image_path]
-                feedback.setProgress(current*progressStep)
+                feedback.setProgress(current * progressStep)
                 continue
             newImage = QgsRasterLayer(
                 image_path,
-                '_'.join(
-                    [imageTag, os.path.basename(image_path)] if imageTag != ''\
+                "_".join(
+                    [imageTag, os.path.basename(image_path)]
+                    if imageTag != ""
                     else [os.path.basename(image_path)]
-                )
+                ),
             )
             QgsProject.instance().addMapLayer(newImage, False)
             if datasetImageNode is not None:
-                currentNode = datasetImageNode if groupExpression is None\
+                currentNode = (
+                    datasetImageNode
+                    if groupExpression is None
                     else self.getLayerCategoryNode(
-                        newImage,
-                        datasetImageNode,
-                        groupExpression
+                        newImage, datasetImageNode, groupExpression
                     )
+                )
                 currentNode.addLayer(newImage)
             outputLayers[image_path] = newImage.id()
-            feedback.setProgress(current*progressStep)
+            feedback.setProgress(current * progressStep)
         if loadToCanvas:
             iface.mapCanvas().freeze(False)
             iface.mapCanvas().refresh()
@@ -286,21 +251,21 @@ class LoadDatasetImagesAlgorithm(QgsProcessingAlgorithm):
         lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'loadimages'
+        return "loadimages"
 
     def displayName(self):
         """
         Returns the translated algorithm name, which should be used for any
         user-visible display of the algorithm name.
         """
-        return self.tr('Load images from dataset')
+        return self.tr("Load images from dataset")
 
     def group(self):
         """
         Returns the name of the group this algorithm belongs to. This string
         should be localised.
         """
-        return self.tr('Dataset Tools')
+        return self.tr("Dataset Tools")
 
     def groupId(self):
         """
@@ -310,13 +275,13 @@ class LoadDatasetImagesAlgorithm(QgsProcessingAlgorithm):
         contain lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'datasettools'
+        return "datasettools"
 
     def tr(self, string):
         """
         Translates input string.
         """
-        return QCoreApplication.translate('LoadDatasetImagesAlgorithm', string)
+        return QCoreApplication.translate("LoadDatasetImagesAlgorithm", string)
 
     def createInstance(self):
         """

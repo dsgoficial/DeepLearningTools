@@ -24,20 +24,21 @@
 import os, uuid
 import tempfile
 from osgeo import gdal, osr, ogr
+
 gdal.UseExceptions()
 from qgis.core import (
-    QgsRectangle, QgsFeatureRequest,
-    QgsCoordinateTransformContext, QgsCoordinateReferenceSystem,
-    QgsRasterLayer
+    QgsRectangle,
+    QgsFeatureRequest,
+    QgsCoordinateTransformContext,
+    QgsCoordinateReferenceSystem,
+    QgsRasterLayer,
 )
 
-class ImageUtils:
 
+class ImageUtils:
     def get_srs(self, input_ds):
         raster_srs = osr.SpatialReference()
-        raster_srs.ImportFromWkt(
-            input_ds.GetProjectionRef()
-        )
+        raster_srs.ImportFromWkt(input_ds.GetProjectionRef())
         return raster_srs
 
     def set_output_srs_form_input(self, input_ds, output_ds):
@@ -54,13 +55,9 @@ class ImageUtils:
         nodata.
         """
         input_ds = gdal.Open(input_path)
-        driver = gdal.GetDriverByName('GTiff')
+        driver = gdal.GetDriverByName("GTiff")
         output_ds = driver.Create(
-            output_path,
-            input_ds.RasterXSize,
-            input_ds.RasterYSize,
-            1,
-            gdal.GDT_Byte
+            output_path, input_ds.RasterXSize, input_ds.RasterYSize, 1, gdal.GDT_Byte
         )
         self.set_output_srs_form_input(input_ds, output_ds)
         return input_ds, output_ds
@@ -70,7 +67,7 @@ class ImageUtils:
         band.Fill(nodata_value)
         # band.SetNoDataValue(nodata_value)
         return band
-    
+
     def get_extents(self, raster_ds):
         geo_transform = raster_ds.GetGeoTransform()
         xmin = geo_transform[0]
@@ -80,36 +77,34 @@ class ImageUtils:
         return [xmin, ymin, xmax, ymax]
 
     def build_ogr_temp_layer(self, input_lyr, raster_ds):
-        driver = ogr.GetDriverByName('MEMORY')
-        temp_ds = driver.CreateDataSource('temp_data')
-        temp = driver.Open('temp_data', 1)
+        driver = ogr.GetDriverByName("MEMORY")
+        temp_ds = driver.CreateDataSource("temp_data")
+        temp = driver.Open("temp_data", 1)
         temp_lyr = temp_ds.CreateLayer(
-            "temp_layer",
-            self.get_srs(raster_ds),
-            geom_type=input_lyr.wkbType()
+            "temp_layer", self.get_srs(raster_ds), geom_type=input_lyr.wkbType()
         )
         # burn
         xmin, ymin, xmax, ymax = self.get_extents(raster_ds)
-        extents = QgsRectangle(
-            xmin, ymin, xmax, ymax
+        extents = QgsRectangle(xmin, ymin, xmax, ymax)
+        request = (
+            QgsFeatureRequest()
+            .setDestinationCrs(
+                QgsCoordinateReferenceSystem(raster_ds.GetProjectionRef()),
+                QgsCoordinateTransformContext(),
+            )
+            .setFilterRect(extents)
         )
-        request = QgsFeatureRequest().setDestinationCrs(
-            QgsCoordinateReferenceSystem(
-                raster_ds.GetProjectionRef()
-            ),
-            QgsCoordinateTransformContext()
-        ).setFilterRect(extents)
         field_name = "f"
         field_id = ogr.FieldDefn(field_name, ogr.OFTInteger)
         temp_lyr.CreateField(field_id)
         feat_definition = temp_lyr.GetLayerDefn()
+
         def populate_temp_lyr(feat):
             wkt_geom = feat.geometry().asWkt()
             new_feat = ogr.Feature(feat_definition)
-            new_feat.SetGeometry(
-                ogr.CreateGeometryFromWkt(wkt_geom)
-            )
+            new_feat.SetGeometry(ogr.CreateGeometryFromWkt(wkt_geom))
             return new_feat
+
         temp_lyr.StartTransaction()
         for feat in input_lyr.getFeatures(request):
             new_feat = populate_temp_lyr(feat)
@@ -123,32 +118,25 @@ class ImageUtils:
         temp_lyr.CommitTransaction()
         return temp_lyr, temp, driver, temp_ds
 
-    def create_image_label(self, input_path, output_path, input_lyr,\
-        burn_value=255, nodata_value=0):
+    def create_image_label(
+        self, input_path, output_path, input_lyr, burn_value=255, nodata_value=0
+    ):
         """
         Creates image label with the same size as input_path
         """
-        output_temp_path = output_path if '.tif' in output_path\
-            else tempfile.mkstemp(suffix='.tif')[1]
+        output_temp_path = (
+            output_path if ".tif" in output_path else tempfile.mkstemp(suffix=".tif")[1]
+        )
         input_ds, output_ds = self.get_output_raster_from_input(
-            input_path,
-            output_temp_path
+            input_path, output_temp_path
         )
         band = self.get_band(output_ds, 1, nodata_value=nodata_value)
         band.FlushCache()
-        temp_lyr, temp, driver, temp_ds = self.build_ogr_temp_layer(
-            input_lyr,
-            input_ds
-        )
-        gdal.RasterizeLayer(
-            output_ds,
-            [1],
-            temp_lyr,
-            burn_values=[burn_value]
-        )
+        temp_lyr, temp, driver, temp_ds = self.build_ogr_temp_layer(input_lyr, input_ds)
+        gdal.RasterizeLayer(output_ds, [1], temp_lyr, burn_values=[burn_value])
         output_ds = None
         temp_lyr = None
-        if '.tif' not in input_path:
+        if ".tif" not in input_path:
             driver = input_ds.GetDriver()
             temp_ds = gdal.Open(output_temp_path)
             new_output = driver.CreateCopy(output_path, temp_ds, 0)
@@ -159,8 +147,3 @@ class ImageUtils:
         temp = None
         temp_ds = None
         driver = None
-
-            
-
-        
-
