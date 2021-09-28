@@ -48,11 +48,6 @@ cmd_folder = os.path.split(inspect.getfile(inspect.currentframe()))[0]
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
-try:
-    import ptvsd
-    ptvsd.enable_attach(address = ('localhost', 5677))
-except Exception as e:
-    pass
 class DeepLearningTools(object):
 
     def __init__(self, iface):

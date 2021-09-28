@@ -2,7 +2,7 @@
     "python.testing.unittestArgs": [
         "-v",
         "-s",
-        "./tests",
+        "./DeepLearningTools",
         "-p",
         "test_*.py"
     ],
