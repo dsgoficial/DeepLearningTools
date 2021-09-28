@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## [0.3](https://github.com/phborba/DeepLearningTools/releases/tag/0.3)
+
+- Polygon inference processing added;
+- Inference UI added;
+
 ## [0.2](https://github.com/phborba/DeepLearningTools/releases/tag/0.2)
 
 - Polygon shape metrics added

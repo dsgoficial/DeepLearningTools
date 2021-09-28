@@ -24,6 +24,7 @@
 import os
 import requests
 import json
+import urllib
 
 import processing
 from qgis.core import (
@@ -35,6 +36,7 @@ from qgis.core import (
     QgsWkbTypes,
     QgsJsonUtils,
     QgsFeatureSink,
+    QgsFields,
 )
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.utils import iface
@@ -53,6 +55,8 @@ class GetPolygonFromInferenceServiceAlgorithm(QgsProcessingAlgorithm):
     PORT = "PORT"
     IMAGE_PATH = "IMAGE_PATH"
     POLYGONIZE_PARAMETERS = "POLYGONIZE_PARAMETERS"
+    CRS = "CRS"
+    OUTPUT = "OUTPUT"
 
     def initAlgorithm(self, config):
         """
@@ -81,7 +85,7 @@ class GetPolygonFromInferenceServiceAlgorithm(QgsProcessingAlgorithm):
                 multiLine=True,
             )
         )
-        self.addParameter(QgsProcessingParameterCrs(self.CRS, self.tr()))
+        self.addParameter(QgsProcessingParameterCrs(self.CRS, self.tr("CRS")))
         self.addParameter(
             QgsProcessingParameterFeatureSink(self.OUTPUT, self.tr("Output layer"))
         )
@@ -99,17 +103,17 @@ class GetPolygonFromInferenceServiceAlgorithm(QgsProcessingAlgorithm):
         crs = self.parameterAsCrs(parameters, self.CRS, context)
 
         polygonize_parameters = (
-            {} if polygonize_parameters == "" else json.loads(polygonize_parameters)
+            None if polygonize_parameters == "" else json.loads(polygonize_parameters)
         )
 
         response = requests.get(
             f"http://{host}:{port}/polygonize",
-            params={"image_path": image_path},
+            params=urllib.parse.urlencode({"file_path": image_path}, safe=":/"),
             json=polygonize_parameters,
         )
 
         (sink, dest_id) = self.parameterAsSink(
-            parameters, self.OUTPUT, context, [], QgsWkbTypes.Polygon, crs
+            parameters, self.OUTPUT, context, QgsFields(), QgsWkbTypes.Polygon, crs
         )
 
         if response.status_code == 200:

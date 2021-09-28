@@ -47,7 +47,7 @@ from DeepLearningTools.core.processing_algorithms.find_polygon_statistics_algori
     FindPolygonStatisticsAlgorithm,
 )
 from DeepLearningTools.core.processing_algorithms.get_polygon_from_inference_service import (
-    GetPolygonFromInferenceService,
+    GetPolygonFromInferenceServiceAlgorithm,
 )
 
 
@@ -72,7 +72,7 @@ class DeepLearningToolsProvider(QgsProcessingProvider):
             # CreateGridAlgorithm(),
             CreateTrainTestValidateSamplesAlgorithm(),
             FindPolygonStatisticsAlgorithm(),
-            GetPolygonFromInferenceService(),
+            GetPolygonFromInferenceServiceAlgorithm(),
         ]
         return algList
 
