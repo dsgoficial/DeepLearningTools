@@ -46,11 +46,12 @@ import processing
 # from .inspectFeatures_ui import Ui_Form
 from .viewer_toolbar_ui import Ui_ViewerToolbar
 
-# FORM_CLASS, _ = uic.loadUiType(os.path.join(
-#     os.path.dirname(__file__), 'viewer_toolbar.ui'), resource_suffix='')
+FORM_CLASS, _ = uic.loadUiType(
+    os.path.join(os.path.dirname(__file__), "viewer_toolbar.ui"), resource_suffix=""
+)
 
 
-class ViewerToolbar(QWidget, Ui_ViewerToolbar):
+class ViewerToolbar(QWidget, FORM_CLASS):
     def __init__(self, iface, parent=None):
         """
         Constructor
@@ -59,6 +60,7 @@ class ViewerToolbar(QWidget, Ui_ViewerToolbar):
         self.iface = iface
         self.loaded_label_ids = set()
         self.setupUi(self)
+        self.splitter.hide()
         self.labelView = None
 
     def unload(self):
@@ -66,6 +68,18 @@ class ViewerToolbar(QWidget, Ui_ViewerToolbar):
             self.set_dynamic_mode(False)
         except:
             pass
+
+    @pyqtSlot(bool, name="on_viewTilesPushButtonviewTilesPushButton_toggled")
+    def toggleBar(self, toggled=None):
+        """
+        Shows/Hides the tool bar
+        """
+        if toggled is None:
+            toggled = self.viewTilesPushButton.isChecked()
+        if toggled:
+            self.splitter.show()
+        else:
+            self.splitter.hide()
 
     @pyqtSlot(bool, name="on_dynamicPushButton_toggled")
     def set_dynamic_mode(self, toggled):

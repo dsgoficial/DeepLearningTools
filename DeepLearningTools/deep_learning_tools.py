@@ -30,6 +30,9 @@ __copyright__ = "(C) 2020 by Philipe Borba"
 
 __revision__ = "$Format:%H$"
 
+from DeepLearningTools.gui.polygonizer_toolbar.polygonize_toolbar import (
+    PolygonizeToolbar,
+)
 import os
 import sys
 import inspect
@@ -180,13 +183,21 @@ class DeepLearningTools(object):
         self.provider = DeepLearningToolsProvider()
         QgsApplication.processingRegistry().addProvider(self.provider)
 
+    def addWidget(self, widget, toolbar=None):
+        """Add a widget to the list of widgets to be deleted on unload."""
+        self.widgetList.append(widget)
+        if toolbar is not None:
+            toolbar.addWidget(widget)
+        return widget
+
     def initGui(self):
         self.initProcessing()
         self.toolbar = self.iface.addToolBar(u"DeepLearningTools")
         self.toolbar.setObjectName(u"DeepLearningTools")
-        self.viewer = ViewerToolbar(self.iface)
-        self.widgetList.append(self.viewer)
-        self.toolbar.addWidget(self.viewer)
+        self.polygonizer = self.addWidget(
+            PolygonizeToolbar(self.iface), toolbar=self.toolbar
+        )
+        self.viewer = self.addWidget(ViewerToolbar(self.iface), toolbar=self.toolbar)
 
     def unload(self):
         QgsApplication.processingRegistry().removeProvider(self.provider)

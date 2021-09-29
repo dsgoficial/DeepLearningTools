@@ -3,5 +3,11 @@
         <file>icons/refresh.png</file>
         <file>icons/dynamic.png</file>
         <file>icons/dual_view.png</file>
+        <file>icons/map-user-24.png</file>
+        <file>icons/polygon-pt-24.png</file>
+        <file>icons/arrow-circle-left-4x.png</file>
+        <file>icons/arrow-circle-right-4x.png</file>
+        <file>icons/bbox-alt-24.png</file>
+        <file>icons/map-options-24.png</file>
     </qresource>
 </RCC>
